@@ -366,8 +366,8 @@ export default function MessagesApp({
   };
 
   return (
-    <div className="h-dvh w-full overflow-hidden bg-[#fafafa] sm:flex sm:items-center sm:justify-center sm:p-6">
-      <div className="mx-auto flex h-dvh w-full overflow-hidden bg-white sm:h-[calc(100dvh-48px)] sm:max-h-[900px] sm:max-w-[1080px] sm:rounded-xl sm:border sm:border-[#dbdbdb]">
+    <div className="h-dvh w-full overflow-hidden bg-white">
+      <div className="mx-auto flex h-dvh w-full overflow-hidden bg-white">
         <aside
           className={`${
             mobileChatOpen ? "hidden" : "flex"
