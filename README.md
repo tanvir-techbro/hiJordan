@@ -29,7 +29,7 @@ Fill in `.env.local`:
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Postgres connection string, e.g. a Neon URL with `?sslmode=require` |
 | `AUTH_SECRET` | Yes | Generate with `openssl rand -base64 32` |
-| `AUTH_URL` | Yes | `http://localhost:3000` locally, your public URL in production |
+| `AUTH_URL` | No | `http://localhost:3000` locally. On Vercel, leave it unset or use your `https://*.vercel.app` production URL — never `localhost` |
 | `AUTH_TRUST_HOST` | Yes | `true` |
 | `GOOGLE_CLIENT_ID` | No | Google sign-in is hidden unless both Google values are set |
 | `GOOGLE_CLIENT_SECRET` | No | Same as above |
@@ -69,14 +69,20 @@ The script also adds `password_hash` to databases created before email/password 
 
 The Google button only appears when both values are present. Leave them empty to ship with email/password only.
 
-## Production
+## Deploying to Vercel
 
-```bash
-npm run build
-npm start
-```
+Add these environment variables in the Vercel project settings:
 
-Set `AUTH_URL` to the deployed origin and keep `.env.local` out of version control.
+- `DATABASE_URL` — same Neon connection string
+- `AUTH_SECRET` — a fresh `openssl rand -base64 32` value
+- `AUTH_TRUST_HOST` — `true`
+- `AUTH_URL` — **do not set it to localhost**. Either omit it (recommended; the deployed request host is used) or set it to your production URL, e.g. `https://hi-jordan.vercel.app`. For preview deployments, leave it unset so each preview uses its own URL.
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — optional
+
+If you use Google sign-in, add the production redirect URI in Google Cloud:
+`https://your-production-domain/api/auth/callback/google`.
+
+Keep `.env.local` out of version control.
 
 ## Notes
 
