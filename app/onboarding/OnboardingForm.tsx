@@ -10,6 +10,7 @@ import {
   validateUsername,
 } from "@/lib/validation";
 import { completeOnboardingAction } from "./actions";
+import Avatar from "@/components/Avatar";
 
 export default function OnboardingForm({
   email,
@@ -137,16 +138,23 @@ export default function OnboardingForm({
             </p>
           ) : null}
 
-          <div className="mt-5 rounded-xl bg-[#fafafa] px-4 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#8e8e8e]">
-              How you&apos;ll appear
-            </p>
-            <p className="mt-1.5 truncate text-[14px] font-semibold text-[#262626]">
-              {normalizeNickname(nickname) || "Your nickname"}
-            </p>
-            <p className="truncate text-[12px] text-[#8e8e8e]">
-              @{normalizedUsername || "username"}
-            </p>
+          <div className="mt-5 flex items-center gap-3 rounded-xl bg-[#fafafa] px-4 py-3">
+            <Avatar
+              seed={normalizedUsername || "hijordan"}
+              label={normalizeNickname(nickname) || "Your avatar"}
+              size={46}
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#8e8e8e]">
+                How you&apos;ll appear
+              </p>
+              <p className="mt-1.5 truncate text-[14px] font-semibold text-[#262626]">
+                {normalizeNickname(nickname) || "Your nickname"}
+              </p>
+              <p className="truncate text-[12px] text-[#8e8e8e]">
+                @{normalizedUsername || "username"}
+              </p>
+            </div>
           </div>
 
           {state?.error && !state.field ? (

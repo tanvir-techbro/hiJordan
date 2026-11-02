@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS app_users (
   password_hash text,
   username text UNIQUE,
   nickname text,
+  last_seen_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT app_users_username_format
@@ -21,6 +22,9 @@ CREATE TABLE IF NOT EXISTS app_users (
 
 -- For databases created before email/password sign-in was added.
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS password_hash text;
+
+-- For online presence.
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS last_seen_at timestamptz;
 
 CREATE TABLE IF NOT EXISTS conversations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

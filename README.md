@@ -5,9 +5,9 @@ A small, Instagram-DM-style messaging app built with Next.js, Postgres, and Auth
 - Email + password sign-in (works out of the box)
 - Google sign-in when OAuth credentials are configured
 - First-run onboarding: pick a unique username and a nickname
-- One-to-one conversations with unread counts and 4-second polling
+- One-to-one conversations with unread counts, sent/seen receipts, online status, and 4-second polling
 - Settings for updating your username / nickname, plus sign out
-- No avatars, no photos, no role-based inboxes
+- Generated emoji avatars, no photo uploads, no role-based inboxes
 
 ## Stack
 

@@ -11,7 +11,6 @@ import {
 } from "react";
 import {
   ChevronLeft,
-  Image as ImageIcon,
   Search,
   Send,
   Settings,
@@ -25,6 +24,8 @@ import type {
   ConversationSummary,
   PublicUser,
 } from "@/lib/types";
+import Avatar from "./Avatar";
+import EmojiPicker from "./EmojiPicker";
 import NewMessageDialog from "./NewMessageDialog";
 
 export default function MessagesApp({
@@ -43,6 +44,7 @@ export default function MessagesApp({
   const [draft, setDraft] = useState("");
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -175,7 +177,9 @@ export default function MessagesApp({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (composerOpen) {
+      if (emojiOpen) {
+        setEmojiOpen(false);
+      } else if (composerOpen) {
         setComposerOpen(false);
       } else {
         setMobileChatOpen(false);
@@ -183,7 +187,7 @@ export default function MessagesApp({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [composerOpen]);
+  }, [composerOpen, emojiOpen]);
 
   useEffect(() => {
     if (!error) return;
@@ -230,6 +234,7 @@ export default function MessagesApp({
     setSelectedId(id);
     setDraft("");
     setError(null);
+    setEmojiOpen(false);
     setMobileChatOpen(true);
     setConversations((current) =>
       current.map((conversation) =>
@@ -257,6 +262,9 @@ export default function MessagesApp({
           lastMessage: null,
           unreadCount: 0,
           updatedAt: new Date().toISOString(),
+          peerLastReadAt: null,
+          peerLastSeenAt: null,
+          peerOnline: false,
         },
         ...current,
       ];
@@ -266,10 +274,26 @@ export default function MessagesApp({
     void refreshConversations();
   };
 
+  const insertEmoji = (emoji: string) => {
+    const input = inputRef.current;
+    const start = input?.selectionStart ?? draft.length;
+    const end = input?.selectionEnd ?? draft.length;
+    const next = `${draft.slice(0, start)}${emoji}${draft.slice(end)}`;
+
+    setDraft(next);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      input?.focus();
+      const caret = start + emoji.length;
+      input?.setSelectionRange(caret, caret);
+    });
+  };
+
   const send = async () => {
     const text = draft.trim();
     if (!text || !selectedId || sending) return;
 
+    setEmojiOpen(false);
     const conversationId = selectedId;
     const temporaryId = `temp-${Date.now()}-${Math.random()
       .toString(36)
@@ -386,9 +410,21 @@ export default function MessagesApp({
                 <Settings size={19} strokeWidth={1.7} />
               </Link>
             </div>
-            <p className="mt-1 truncate text-[11px] text-[#8e8e8e]">
-              {currentUser.nickname} · @{currentUser.username}
-            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <Avatar
+                seed={currentUser.username}
+                label={currentUser.nickname}
+                size={40}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold leading-[18px] text-[#262626]">
+                  {currentUser.nickname}
+                </p>
+                <p className="truncate text-[11px] leading-4 text-[#8e8e8e]">
+                  @{currentUser.username}
+                </p>
+              </div>
+            </div>
 
             <div className="mt-4 flex items-center justify-between">
               <h2 className="text-[15px] font-semibold text-[#262626]">
@@ -443,56 +479,64 @@ export default function MessagesApp({
                   <button
                     key={conversation.id}
                     onClick={() => openConversation(conversation.id)}
-                    className={`flex w-full flex-col gap-1 px-4 py-3 text-left transition ${
+                    className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${
                       active ? "bg-[#efefef]" : "hover:bg-[#fafafa]"
                     }`}
                   >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p
-                        className={`truncate text-[14px] leading-[18px] text-[#262626] ${
-                          conversation.unreadCount > 0
-                            ? "font-semibold"
-                            : "font-medium"
-                        }`}
-                      >
-                        {conversation.peer.nickname}
-                      </p>
-                      {conversation.lastMessage ? (
-                        <span
-                          suppressHydrationWarning
-                          className="shrink-0 text-[11px] leading-[17px] text-[#8e8e8e]"
+                    <Avatar
+                      seed={conversation.peer.username}
+                      label={conversation.peer.nickname}
+                      size={52}
+                      online={conversation.peerOnline}
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <p
+                          className={`truncate text-[14px] leading-[18px] text-[#262626] ${
+                            conversation.unreadCount > 0
+                              ? "font-semibold"
+                              : "font-medium"
+                          }`}
                         >
-                          {mounted
-                            ? relativeTime(conversation.lastMessage.createdAt)
-                            : ""}
-                        </span>
-                      ) : null}
-                    </div>
+                          {conversation.peer.nickname}
+                        </p>
+                        {conversation.lastMessage ? (
+                          <span
+                            suppressHydrationWarning
+                            className="shrink-0 text-[11px] leading-[17px] text-[#8e8e8e]"
+                          >
+                            {mounted
+                              ? relativeTime(conversation.lastMessage.createdAt)
+                              : ""}
+                          </span>
+                        ) : null}
+                      </div>
 
-                    <p className="truncate text-[11.5px] leading-4 text-[#8e8e8e]">
-                      @{conversation.peer.username}
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      <p
-                        className={`min-w-0 flex-1 truncate text-[13px] leading-[17px] ${
-                          conversation.unreadCount > 0
-                            ? "font-medium text-[#262626]"
-                            : "text-[#8e8e8e]"
-                        }`}
-                      >
-                        {messagePreview(
-                          conversation.lastMessage,
-                          currentUser.id,
-                        )}
+                      <p className="truncate text-[11.5px] leading-4 text-[#8e8e8e]">
+                        @{conversation.peer.username}
                       </p>
-                      {conversation.unreadCount > 0 ? (
-                        <span className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full bg-[#3797f0] px-1 text-[10px] font-semibold leading-none text-white">
-                          {conversation.unreadCount > 9
-                            ? "9+"
-                            : conversation.unreadCount}
-                        </span>
-                      ) : null}
+
+                      <div className="flex items-center gap-2">
+                        <p
+                          className={`min-w-0 flex-1 truncate text-[13px] leading-[17px] ${
+                            conversation.unreadCount > 0
+                              ? "font-medium text-[#262626]"
+                              : "text-[#8e8e8e]"
+                          }`}
+                        >
+                          {messagePreview(
+                            conversation.lastMessage,
+                            currentUser.id,
+                          )}
+                        </p>
+                        {conversation.unreadCount > 0 ? (
+                          <span className="grid h-[18px] min-w-[18px] shrink-0 place-items-center rounded-full bg-[#3797f0] px-1 text-[10px] font-semibold leading-none text-white">
+                            {conversation.unreadCount > 9
+                              ? "9+"
+                              : conversation.unreadCount}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </button>
                 );
@@ -533,12 +577,33 @@ export default function MessagesApp({
                 >
                   <ChevronLeft size={22} strokeWidth={1.8} />
                 </button>
+                <Avatar
+                  seed={selected.peer.username}
+                  label={selected.peer.nickname}
+                  size={38}
+                  online={selected.peerOnline}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-semibold leading-[18px] text-[#262626]">
                     {selected.peer.nickname}
                   </p>
-                  <p className="mt-0.5 truncate text-[12px] leading-4 text-[#8e8e8e]">
+                  <p
+                    suppressHydrationWarning
+                    className="mt-0.5 truncate text-[12px] leading-4 text-[#8e8e8e]"
+                  >
                     @{selected.peer.username}
+                    {selected.peerOnline ? (
+                      <>
+                        {" · "}
+                        <span className="font-medium text-[#1a8917]">
+                          Active now
+                        </span>
+                      </>
+                    ) : selected.peerLastSeenAt ? (
+                      ` · Active ${relativeTime(selected.peerLastSeenAt)} ago`
+                    ) : (
+                      " · Offline"
+                    )}
                   </p>
                 </div>
                 <span className="hidden shrink-0 text-[11px] text-[#b0b0b0] sm:block">
@@ -575,17 +640,37 @@ export default function MessagesApp({
                     const showDay =
                       index === 0 ||
                       dayLabel(previous.createdAt) !== day;
+                    const mine = message.senderId === currentUser.id;
+                    const isLast = index === messages.length - 1;
+                    const seen =
+                      isLast &&
+                      mine &&
+                      selected.peerLastReadAt !== null &&
+                      new Date(selected.peerLastReadAt).getTime() >=
+                        new Date(message.createdAt).getTime();
 
                     return (
                       <Fragment key={message.id}>
                         {showDay ? <TimeDivider iso={message.createdAt} /> : null}
                         <Bubble
                           message={message}
-                          mine={message.senderId === currentUser.id}
+                          mine={mine}
                           newGroup={
                             !previous || previous.senderId !== message.senderId
                           }
                         />
+                        {isLast && mine ? (
+                          <p
+                            suppressHydrationWarning
+                            className="mt-1 pr-1 text-right text-[10.5px] leading-4 text-[#8e8e8e]"
+                          >
+                            {message.id.startsWith("temp-")
+                              ? "Sending…"
+                              : seen
+                                ? "Seen"
+                                : "Sent"}
+                          </p>
+                        ) : null}
                       </Fragment>
                     );
                   })}
@@ -593,14 +678,18 @@ export default function MessagesApp({
               </div>
 
               <div className="shrink-0 border-t border-[#efefef] px-3 py-3 sm:px-4">
-                <div className="mx-auto flex max-w-[700px] items-center gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#dbdbdb] px-3 py-[7px] transition focus-within:border-[#b8b8b8]">
-                    <Smile
-                      size={22}
-                      strokeWidth={1.6}
-                      className="shrink-0 text-[#262626]"
-                      aria-hidden
-                    />
+                <div className="relative mx-auto flex max-w-[700px] items-center gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#dbdbdb] px-2.5 py-[5px] transition focus-within:border-[#b8b8b8]">
+                    <button
+                      type="button"
+                      onClick={() => setEmojiOpen((current) => !current)}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      aria-label="Insert emoji"
+                      aria-expanded={emojiOpen}
+                      className="grid size-8 shrink-0 place-items-center rounded-full text-[#262626] transition hover:bg-[#efefef]"
+                    >
+                      <Smile size={22} strokeWidth={1.6} />
+                    </button>
                     <input
                       ref={inputRef}
                       value={draft}
@@ -615,14 +704,6 @@ export default function MessagesApp({
                       aria-label={`Message ${selected.peer.nickname}`}
                       className="h-6 min-w-0 flex-1 bg-transparent text-[14px] text-[#262626] outline-none placeholder:text-[#8e8e8e]"
                     />
-                    {draft ? null : (
-                      <ImageIcon
-                        size={22}
-                        strokeWidth={1.6}
-                        className="shrink-0 text-[#262626]"
-                        aria-hidden
-                      />
-                    )}
                   </div>
                   {draft.trim() ? (
                     <button
@@ -632,6 +713,13 @@ export default function MessagesApp({
                     >
                       Send
                     </button>
+                  ) : null}
+
+                  {emojiOpen ? (
+                    <EmojiPicker
+                      onPick={insertEmoji}
+                      onClose={() => setEmojiOpen(false)}
+                    />
                   ) : null}
                 </div>
               </div>

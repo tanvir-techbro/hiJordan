@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createOrGetConversation,
   listConversations,
+  touchPresence,
 } from "@/lib/queries";
 import { getCurrentUser, isUuid } from "@/lib/session";
 
@@ -11,6 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await touchPresence(user.id);
   const conversations = await listConversations(user.id);
   return NextResponse.json({ conversations });
 }

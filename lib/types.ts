@@ -22,6 +22,9 @@ export interface ConversationSummary {
   lastMessage: ChatMessage | null;
   unreadCount: number;
   updatedAt: string;
+  peerLastReadAt: string | null;
+  peerLastSeenAt: string | null;
+  peerOnline: boolean;
 }
 
 export interface ProfileFormState {

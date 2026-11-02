@@ -14,6 +14,7 @@ export interface DbUser {
   password_hash: string | null;
   username: string | null;
   nickname: string | null;
+  last_seen_at: Date | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -29,6 +30,9 @@ interface ConversationRow {
   last_sender_id: string | null;
   last_created_at: Date | null;
   unread_count: number;
+  peer_last_read_at: Date | null;
+  peer_last_seen_at: Date | null;
+  peer_online: boolean;
 }
 
 interface MessageRow {
@@ -189,7 +193,16 @@ export async function listConversations(
        lm.body AS last_body,
        lm.sender_id AS last_sender_id,
        lm.created_at AS last_created_at,
-       COALESCE(unread.count, 0)::int AS unread_count
+       COALESCE(unread.count, 0)::int AS unread_count,
+       CASE
+         WHEN them.last_read_at > 'epoch' THEN them.last_read_at
+         ELSE NULL
+       END AS peer_last_read_at,
+       peer.last_seen_at AS peer_last_seen_at,
+       (
+         peer.last_seen_at IS NOT NULL
+         AND peer.last_seen_at > now() - interval '75 seconds'
+       ) AS peer_online
      FROM conversation_members AS me
      JOIN conversations AS c ON c.id = me.conversation_id
      JOIN conversation_members AS them
@@ -237,6 +250,9 @@ export async function listConversations(
       lastMessage,
       unreadCount: row.unread_count,
       updatedAt: iso(row.updated_at),
+      peerLastReadAt: row.peer_last_read_at ? iso(row.peer_last_read_at) : null,
+      peerLastSeenAt: row.peer_last_seen_at ? iso(row.peer_last_seen_at) : null,
+      peerOnline: row.peer_online,
     };
   });
 }
@@ -319,6 +335,20 @@ export async function markConversationRead(
     [userId, conversationId],
   );
   return (result.rowCount ?? 0) > 0;
+}
+
+// Throttled heartbeat so polling doesn't write on every request.
+export async function touchPresence(userId: string): Promise<void> {
+  await pool.query(
+    `UPDATE app_users
+     SET last_seen_at = now()
+     WHERE id = $1
+       AND (
+         last_seen_at IS NULL
+         OR last_seen_at < now() - interval '15 seconds'
+       )`,
+    [userId],
+  );
 }
 
 export async function createOrGetConversation(

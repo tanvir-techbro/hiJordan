@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, X } from "lucide-react";
 import type { PublicUser } from "@/lib/types";
+import Avatar from "./Avatar";
 
 export default function NewMessageDialog({
   onClose,
@@ -149,6 +150,11 @@ export default function NewMessageDialog({
               disabled={creatingId !== null}
               className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#fafafa] disabled:opacity-60"
             >
+              <Avatar
+                seed={user.username}
+                label={user.nickname}
+                size={44}
+              />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-medium text-[#262626]">
                   {user.nickname}

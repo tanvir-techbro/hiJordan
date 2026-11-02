@@ -19,12 +19,20 @@ export default async function SettingsPage() {
     year: "numeric",
   }).format(user.created_at);
 
+  const signInMethod =
+    user.google_sub && user.password_hash
+      ? "Google or email"
+      : user.google_sub
+        ? "Google"
+        : "Email & password";
+
   return (
     <SettingsForm
       email={user.email}
       initialUsername={user.username}
       initialNickname={user.nickname}
       memberSince={memberSince}
+      signInMethod={signInMethod}
     />
   );
 }

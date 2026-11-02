@@ -10,6 +10,7 @@ import {
   validateNickname,
   validateUsername,
 } from "@/lib/validation";
+import Avatar from "@/components/Avatar";
 import { signOutAction, updateProfileAction } from "./actions";
 
 export default function SettingsForm({
@@ -17,11 +18,13 @@ export default function SettingsForm({
   initialUsername,
   initialNickname,
   memberSince,
+  signInMethod,
 }: {
   email: string;
   initialUsername: string;
   initialNickname: string;
   memberSince: string;
+  signInMethod: string;
 }) {
   const [state, formAction, pending] = useActionState<
     ProfileFormState | null,
@@ -73,11 +76,31 @@ export default function SettingsForm({
               Profile
             </h2>
             <p className="mt-0.5 text-[12px] text-[#8e8e8e]">
-              This is how you show up in conversations. No photos, just names.
+              This is how you show up in conversations. Your avatar is
+              generated automatically.
             </p>
           </div>
 
           <form action={formAction} className="px-5 py-5">
+            <div className="mb-5 flex items-center gap-4 rounded-xl bg-[#fafafa] p-4">
+              <Avatar
+                seed={normalizedUsername || "hijordan"}
+                label={normalizeNickname(nickname) || "Your avatar"}
+                size={64}
+              />
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-semibold text-[#262626]">
+                  {normalizeNickname(nickname) || "Your nickname"}
+                </p>
+                <p className="truncate text-[12px] text-[#8e8e8e]">
+                  @{normalizedUsername || "username"}
+                </p>
+                <p className="mt-1 text-[11px] leading-4 text-[#8e8e8e]">
+                  Your avatar is generated automatically.
+                </p>
+              </div>
+            </div>
+
             <label
               htmlFor="username"
               className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#8e8e8e]"
@@ -168,14 +191,6 @@ export default function SettingsForm({
                 <span className="text-[12px] text-[#ed4956]">{state.error}</span>
               ) : null}
             </div>
-
-            <p className="mt-4 text-[11px] text-[#8e8e8e]">
-              Your profile preview:{" "}
-              <span className="font-medium text-[#262626]">
-                {normalizeNickname(nickname) || "Nickname"}
-              </span>{" "}
-              <span>@{normalizedUsername || "username"}</span>
-            </p>
           </form>
         </section>
 
@@ -192,7 +207,7 @@ export default function SettingsForm({
             </div>
             <div className="flex items-center justify-between gap-4 px-5 py-3.5">
               <dt className="text-[13px] text-[#8e8e8e]">Sign-in method</dt>
-              <dd className="text-[13px] text-[#262626]">Google</dd>
+              <dd className="text-[13px] text-[#262626]">{signInMethod}</dd>
             </div>
             <div className="flex items-center justify-between gap-4 px-5 py-3.5">
               <dt className="text-[13px] text-[#8e8e8e]">Member since</dt>

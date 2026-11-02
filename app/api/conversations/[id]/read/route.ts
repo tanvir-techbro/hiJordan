@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { markConversationRead } from "@/lib/queries";
+import { markConversationRead, touchPresence } from "@/lib/queries";
 import { getCurrentUser, isUuid } from "@/lib/session";
 
 interface RouteParams {
@@ -22,5 +22,6 @@ export async function POST(_request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
 
+  await touchPresence(user.id);
   return NextResponse.json({ ok: true });
 }
