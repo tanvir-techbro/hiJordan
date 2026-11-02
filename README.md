@@ -29,7 +29,7 @@ Fill in `.env.local`:
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | Postgres connection string, e.g. a Neon URL with `?sslmode=require` |
 | `AUTH_SECRET` | Yes | Generate with `openssl rand -base64 32` |
-| `AUTH_URL` | No | `http://localhost:3000` locally. On Vercel, leave it unset or use your `https://*.vercel.app` production URL — never `localhost` |
+| `AUTH_URL` | No | `http://localhost:3000` locally. In production leave it unset (the request host is used) or set it to the exact public URL. Never `localhost` |
 | `AUTH_TRUST_HOST` | Yes | `true` |
 | `GOOGLE_CLIENT_ID` | No | Google sign-in is hidden unless both Google values are set |
 | `GOOGLE_CLIENT_SECRET` | No | Same as above |
@@ -69,20 +69,49 @@ The script also adds `password_hash` to databases created before email/password 
 
 The Google button only appears when both values are present. Leave them empty to ship with email/password only.
 
-## Deploying to Vercel
+## Deploying
 
-Add these environment variables in the Vercel project settings:
+The app runs on any host that builds Next.js with Node.js. Add these environment
+variables in the host's dashboard:
 
-- `DATABASE_URL` — same Neon connection string
+- `DATABASE_URL` — same Postgres connection string
 - `AUTH_SECRET` — a fresh `openssl rand -base64 32` value
 - `AUTH_TRUST_HOST` — `true`
-- `AUTH_URL` — **do not set it to localhost**. Either omit it (recommended; the deployed request host is used) or set it to your production URL, e.g. `https://hi-jordan.vercel.app`. For preview deployments, leave it unset so each preview uses its own URL.
+- `AUTH_URL` — **do not set it to localhost**. Either omit it (recommended; the
+  deployed request host is used) or set it to your exact production URL.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — optional
 
 If you use Google sign-in, add the production redirect URI in Google Cloud:
 `https://your-production-domain/api/auth/callback/google`.
 
 Keep `.env.local` out of version control.
+
+### Netlify (works with delegated subdomains such as `hijordan.qd.je`)
+
+DigitalPlat only delegates nameservers; it has no DNS record editor. Netlify
+supports standalone subdomains, so it can host `hijordan.qd.je` directly.
+
+1. Push the repo to GitHub.
+2. In Netlify: **Add new site → Import an existing project → GitHub**, then
+   pick the repository. Build command `npm run build` is detected automatically.
+3. Add the environment variables listed above, then deploy.
+4. Open **Domain management → Add custom domain**, enter
+   `hijordan.qd.je`, then **Verify → Add subdomain**.
+5. Open the domain's **Options → Set up Netlify DNS** and copy the nameservers
+   Netlify shows (they look like `dns1.p0X.nsone.net`).
+6. In the DigitalPlat dashboard, open the domain and replace its nameservers
+   with the Netlify ones.
+7. Wait for DNS propagation. Netlify then issues the HTTPS certificate
+   automatically and the app is live at `https://hijordan.qd.je`.
+
+### Vercel
+
+Vercel treats `qd.je` as the apex domain because `qd.je` is not on the Public
+Suffix List, so it asks for a TXT record at `_vercel.qd.je`. DigitalPlat cannot
+create records in the parent `qd.je` zone, so a `*.qd.je` name cannot be
+verified on Vercel. Vercel works with registrable domains (`example.com`) and
+with namespaces that are on the Public Suffix List (`us.kg`, `qzz.io`, `xx.kg`,
+`dpdns.org`).
 
 ## Notes
 
