@@ -74,3 +74,27 @@ accounts created with Google need a password before they can sign in here.
 npm run typecheck
 npx expo export --platform android
 ```
+
+## Build an installable APK
+
+A release APK bundles the JavaScript, so it runs without Metro. It is signed
+with the local debug keystore, which is fine for sideloading but not for the
+Play Store.
+
+```bash
+npx expo prebuild --platform android
+cd android
+./gradlew assembleRelease
+```
+
+The APK is written to `android/app/build/outputs/apk/release/app-release.apk`.
+
+You need JDK 17 and the Android SDK. Point Gradle at the SDK with an
+`android/local.properties` file:
+
+```properties
+sdk.dir=/path/to/Android/Sdk
+```
+
+`EXPO_PUBLIC_API_URL` is baked in at build time. With it unset, the APK uses
+`https://hi-jordan-phi.vercel.app`.
