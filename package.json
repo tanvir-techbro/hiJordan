@@ -9,6 +9,7 @@
     "db:setup": "node --env-file=.env.local scripts/setup-db.mjs"
   },
   "dependencies": {
+    "jose": "^6.2.15",
     "lucide-react": "^0.548.0",
     "next": "16.4.3",
     "next-auth": "^5.0.0-beta.32",

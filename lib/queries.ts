@@ -43,6 +43,13 @@ interface MessageRow {
   created_at: Date;
 }
 
+export interface ConversationState {
+  peer: PublicUser;
+  peerLastReadAt: string | null;
+  peerLastSeenAt: string | null;
+  peerOnline: boolean;
+}
+
 function iso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
@@ -276,6 +283,55 @@ export async function getConversationPeer(
     [userId, conversationId],
   );
   return rows[0] ?? null;
+}
+
+export async function getConversationState(
+  userId: string,
+  conversationId: string,
+): Promise<ConversationState | null> {
+  const { rows } = await pool.query<{
+    id: string;
+    username: string;
+    nickname: string;
+    peer_last_read_at: Date | null;
+    peer_last_seen_at: Date | null;
+    peer_online: boolean;
+  }>(
+    `SELECT
+       peer.id,
+       peer.username,
+       peer.nickname,
+       CASE
+         WHEN them.last_read_at > 'epoch' THEN them.last_read_at
+         ELSE NULL
+       END AS peer_last_read_at,
+       peer.last_seen_at AS peer_last_seen_at,
+       (
+         peer.last_seen_at IS NOT NULL
+         AND peer.last_seen_at > now() - interval '75 seconds'
+       ) AS peer_online
+     FROM conversation_members AS me
+     JOIN conversation_members AS them
+       ON them.conversation_id = me.conversation_id AND them.user_id <> me.user_id
+     JOIN app_users AS peer ON peer.id = them.user_id
+     WHERE me.user_id = $1 AND me.conversation_id = $2
+     LIMIT 1`,
+    [userId, conversationId],
+  );
+
+  const row = rows[0];
+  if (!row) return null;
+
+  return {
+    peer: {
+      id: row.id,
+      username: row.username,
+      nickname: row.nickname,
+    },
+    peerLastReadAt: row.peer_last_read_at ? iso(row.peer_last_read_at) : null,
+    peerLastSeenAt: row.peer_last_seen_at ? iso(row.peer_last_seen_at) : null,
+    peerOnline: row.peer_online,
+  };
 }
 
 export async function getMessages(

@@ -48,6 +48,20 @@ npm run dev
 
 Open http://localhost:3000, create an account with an email and password, then choose your username and nickname.
 
+## Mobile app
+
+A React Native (Expo) client lives in [`mobile/`](./mobile). It shares the same
+database and accounts through the bearer-token `/api/mobile/*` routes.
+
+```bash
+cd mobile
+npm install
+npm start
+```
+
+See [`mobile/README.md`](./mobile/README.md) for `EXPO_PUBLIC_API_URL` and other
+details.
+
 ## Database
 
 `db/schema.sql` is idempotent and is applied by `npm run db:setup`. It creates:

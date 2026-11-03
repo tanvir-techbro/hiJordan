@@ -1,0 +1,16 @@
+export const colors = {
+  background: "#ffffff",
+  backgroundSubtle: "#fafafa",
+  border: "#efefef",
+  borderStrong: "#dbdbdb",
+  text: "#262626",
+  textMuted: "#8e8e8e",
+  textFaint: "#b0b0b0",
+  blue: "#0095f6",
+  bluePressed: "#1877f2",
+  bubbleMine: "#3797f0",
+  bubbleTheirs: "#efefef",
+  online: "#1a8917",
+  danger: "#ed4956",
+  white: "#ffffff",
+};

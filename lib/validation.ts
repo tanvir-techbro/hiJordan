@@ -86,3 +86,9 @@ export function isUniqueViolation(error: unknown): boolean {
     (error as { code?: string }).code === "23505"
   );
 }
+
+export function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
