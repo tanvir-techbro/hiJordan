@@ -5,13 +5,11 @@ import {
   useFocusEffect,
   useLocalSearchParams,
 } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -23,6 +21,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "../../components/Avatar";
 import EmojiPicker from "../../components/EmojiPicker";
+import { KeyboardAvoider } from "../../components/Keyboard";
 import {
   ApiError,
   getMessages,
@@ -110,6 +109,17 @@ export default function ChatScreen() {
       return () => clearInterval(interval);
     }, [token, conversationId, load]),
   );
+
+  // Keep the newest message visible when the keyboard opens.
+  useEffect(() => {
+    const subscription = Keyboard.addListener("keyboardDidShow", () => {
+      stickToBottom.current = true;
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToEnd({ animated: true });
+      });
+    });
+    return () => subscription.remove();
+  }, []);
 
   if (status === "loading") {
     return (
@@ -255,10 +265,7 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoider style={styles.flex}>
         {header}
 
         <FlatList
@@ -400,7 +407,7 @@ export default function ChatScreen() {
             </Pressable>
           ) : null}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
 
       <EmojiPicker
         visible={emojiOpen}

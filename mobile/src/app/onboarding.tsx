@@ -2,8 +2,6 @@ import { Redirect, router } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "../components/Avatar";
+import { KeyboardAvoider } from "../components/Keyboard";
 import { ApiError, updateMe } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { colors } from "../lib/theme";
@@ -89,10 +88,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoider style={styles.flex}>
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -177,7 +173,7 @@ export default function OnboardingScreen() {
             <Text style={styles.signOutText}>Use a different account</Text>
           </Pressable>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </SafeAreaView>
   );
 }

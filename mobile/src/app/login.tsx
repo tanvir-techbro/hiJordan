@@ -3,8 +3,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAvoider } from "../components/Keyboard";
 import { useAuth } from "../lib/auth";
 import { colors } from "../lib/theme";
 import {
@@ -90,10 +89,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoider style={styles.flex}>
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -229,7 +225,7 @@ export default function LoginScreen() {
             </Text>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAvoider>
     </SafeAreaView>
   );
 }
