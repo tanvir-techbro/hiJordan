@@ -99,7 +99,7 @@ export default function Avatar({
         <span
           aria-label="Online"
           title="Online"
-          className="absolute bottom-0 right-0 rounded-full bg-[#1a8917] ring-2 ring-white"
+          className="absolute bottom-0 right-0 rounded-full bg-success ring-2 ring-surface"
           style={{
             width: Math.max(9, Math.round(size * 0.26)),
             height: Math.max(9, Math.round(size * 0.26)),

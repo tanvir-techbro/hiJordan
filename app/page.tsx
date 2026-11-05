@@ -6,10 +6,18 @@ import type { PublicUser } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ c?: string | string[] }>;
+}) {
   const user = await getSignedInUser();
   if (!user) redirect("/login");
   if (!user.username || !user.nickname) redirect("/onboarding");
+
+  const params = await searchParams;
+  const initialSelectedId =
+    typeof params.c === "string" && params.c ? params.c : null;
 
   const currentUser: PublicUser = {
     id: user.id,
@@ -22,6 +30,7 @@ export default async function Page() {
     <MessagesApp
       currentUser={currentUser}
       initialConversations={conversations}
+      initialSelectedId={initialSelectedId}
     />
   );
 }

@@ -77,7 +77,7 @@ export default function EmojiPicker({
       ref={panelRef}
       role="dialog"
       aria-label="Emoji picker"
-      className="absolute bottom-full right-0 z-30 mb-2 w-[286px] max-w-[calc(100vw-24px)] rounded-2xl border border-[#dbdbdb] bg-white p-2 shadow-xl"
+      className="absolute bottom-full right-0 z-30 mb-2 w-[286px] max-w-[calc(100vw-24px)] rounded-2xl border border-line bg-surface p-2 shadow-xl"
     >
       <div className="thin-scrollbar grid max-h-[220px] grid-cols-7 gap-0.5 overflow-y-auto">
         {EMOJIS.map((emoji) => (
@@ -86,7 +86,7 @@ export default function EmojiPicker({
             type="button"
             onClick={() => onPick(emoji)}
             aria-label={`Insert ${emoji}`}
-            className="grid size-9 place-items-center rounded-lg text-[20px] leading-none transition hover:bg-[#efefef]"
+            className="grid size-9 place-items-center rounded-lg text-[20px] leading-none transition hover:bg-hover"
           >
             {emoji}
           </button>

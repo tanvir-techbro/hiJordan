@@ -90,16 +90,16 @@ export default function NewMessageDialog({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-white sm:h-auto sm:max-h-[620px] sm:rounded-2xl sm:border sm:border-[#dbdbdb]">
-        <div className="relative flex h-14 shrink-0 items-center justify-center border-b border-[#efefef] px-4">
+      <div className="flex h-dvh w-full max-w-[430px] flex-col overflow-hidden bg-surface sm:h-auto sm:max-h-[620px] sm:rounded-2xl sm:border sm:border-line">
+        <div className="relative flex h-14 shrink-0 items-center justify-center border-b border-line-soft px-4">
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute left-3 grid size-8 place-items-center rounded-full text-[#262626] transition hover:bg-[#efefef]"
+            className="absolute left-3 grid size-8 place-items-center rounded-full text-ink transition hover:bg-hover"
           >
             <X size={20} strokeWidth={1.8} />
           </button>
-          <h2 className="text-[14px] font-semibold text-[#262626]">
+          <h2 className="text-[14px] font-semibold text-ink">
             New message
           </h2>
         </div>
@@ -109,7 +109,7 @@ export default function NewMessageDialog({
             <Search
               size={15}
               strokeWidth={2}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e8e]"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
             />
             <input
               ref={inputRef}
@@ -117,14 +117,14 @@ export default function NewMessageDialog({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search people"
               aria-label="Search people"
-              className="h-9 w-full rounded-lg bg-[#efefef] pl-9 pr-3 text-[13px] text-[#262626] outline-none placeholder:text-[#8e8e8e] focus:bg-[#e9e9e9]"
+              className="h-9 w-full rounded-lg bg-subtle pl-9 pr-3 text-[13px] text-ink outline-none placeholder:text-muted focus:bg-hover"
             />
           </div>
         </div>
 
         <div className="thin-scrollbar flex-1 overflow-y-auto pb-2">
           {loading && users.length === 0 ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-[12px] text-[#8e8e8e]">
+            <div className="flex items-center justify-center gap-2 py-10 text-[12px] text-muted">
               <Loader2 size={14} className="animate-spin" />
               Looking for people…
             </div>
@@ -132,10 +132,10 @@ export default function NewMessageDialog({
 
           {!loading && users.length === 0 ? (
             <div className="px-6 py-10 text-center">
-              <p className="text-[13px] font-medium text-[#262626]">
+              <p className="text-[13px] font-medium text-ink">
                 No one found.
               </p>
-              <p className="mt-1 text-[12px] text-[#8e8e8e]">
+              <p className="mt-1 text-[12px] text-muted">
                 {query.trim()
                   ? "Try a different name or username."
                   : "Once someone joins HiJordan, they'll show up here."}
@@ -148,7 +148,7 @@ export default function NewMessageDialog({
               key={user.id}
               onClick={() => startConversation(user)}
               disabled={creatingId !== null}
-              className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#fafafa] disabled:opacity-60"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-subtle disabled:opacity-60"
             >
               <Avatar
                 seed={user.username}
@@ -156,20 +156,20 @@ export default function NewMessageDialog({
                 size={44}
               />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[14px] font-medium text-[#262626]">
+                <p className="truncate text-[14px] font-medium text-ink">
                   {user.nickname}
                 </p>
-                <p className="truncate text-[12px] text-[#8e8e8e]">
+                <p className="truncate text-[12px] text-muted">
                   @{user.username}
                 </p>
               </div>
               {creatingId === user.id ? (
                 <Loader2
                   size={15}
-                  className="shrink-0 animate-spin text-[#8e8e8e]"
+                  className="shrink-0 animate-spin text-muted"
                 />
               ) : (
-                <span className="shrink-0 text-[12px] font-semibold text-[#0095f6]">
+                <span className="shrink-0 text-[12px] font-semibold text-accent">
                   Message
                 </span>
               )}
@@ -180,7 +180,7 @@ export default function NewMessageDialog({
         {error ? (
           <p
             role="alert"
-            className="shrink-0 border-t border-[#efefef] px-4 py-3 text-[12px] text-[#ed4956]"
+            className="shrink-0 border-t border-line-soft px-4 py-3 text-[12px] text-danger"
           >
             {error}
           </p>

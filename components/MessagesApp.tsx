@@ -31,18 +31,24 @@ import NewMessageDialog from "./NewMessageDialog";
 export default function MessagesApp({
   currentUser,
   initialConversations,
+  initialSelectedId,
 }: {
   currentUser: PublicUser;
   initialConversations: ConversationSummary[];
+  initialSelectedId?: string | null;
 }) {
   const [conversations, setConversations] =
     useState<ConversationSummary[]>(initialConversations);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialSelectedId ?? null,
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
-  const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [mobileChatOpen, setMobileChatOpen] = useState(
+    Boolean(initialSelectedId),
+  );
   const [composerOpen, setComposerOpen] = useState(false);
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -390,22 +396,22 @@ export default function MessagesApp({
   };
 
   return (
-    <div className="h-dvh w-full overflow-hidden bg-white">
-      <div className="mx-auto flex h-dvh w-full overflow-hidden bg-white">
+    <div className="h-dvh w-full overflow-hidden bg-surface">
+      <div className="mx-auto flex h-dvh w-full overflow-hidden bg-surface">
         <aside
           className={`${
             mobileChatOpen ? "hidden" : "flex"
-          } w-full shrink-0 flex-col border-r border-[#dbdbdb] bg-white sm:flex sm:w-[380px]`}
+          } w-full shrink-0 flex-col border-r border-line bg-surface sm:flex sm:w-[380px]`}
         >
           <div className="shrink-0 px-5 pb-3 pt-5">
             <div className="flex items-center justify-between gap-3">
-              <h1 className="font-script text-[34px] leading-none tracking-[-0.01em] text-[#262626]">
+              <h1 className="font-script text-[34px] leading-none tracking-[-0.01em] text-ink">
                 HiJordan
               </h1>
               <Link
                 href="/settings"
                 aria-label="Settings"
-                className="grid size-8 place-items-center rounded-full text-[#262626] transition hover:bg-[#efefef]"
+                className="grid size-8 place-items-center rounded-full text-ink transition hover:bg-hover"
               >
                 <Settings size={19} strokeWidth={1.7} />
               </Link>
@@ -417,29 +423,29 @@ export default function MessagesApp({
                 size={40}
               />
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold leading-[18px] text-[#262626]">
+                <p className="truncate text-[13px] font-semibold leading-[18px] text-ink">
                   {currentUser.nickname}
                 </p>
-                <p className="truncate text-[11px] leading-4 text-[#8e8e8e]">
+                <p className="truncate text-[11px] leading-4 text-muted">
                   @{currentUser.username}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <h2 className="text-[15px] font-semibold text-[#262626]">
+              <h2 className="text-[15px] font-semibold text-ink">
                 Messages
               </h2>
               <div className="flex items-center gap-2">
                 {unreadTotal > 0 ? (
-                  <span className="text-[11px] text-[#8e8e8e]">
+                  <span className="text-[11px] text-muted">
                     {unreadTotal} new
                   </span>
                 ) : null}
                 <button
                   onClick={() => setComposerOpen(true)}
                   aria-label="New message"
-                  className="grid size-8 place-items-center rounded-full text-[#262626] transition hover:bg-[#efefef]"
+                  className="grid size-8 place-items-center rounded-full text-ink transition hover:bg-hover"
                 >
                   <SquarePen size={19} strokeWidth={1.7} />
                 </button>
@@ -450,20 +456,20 @@ export default function MessagesApp({
               <Search
                 size={15}
                 strokeWidth={2}
-                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e8e]"
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
               />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search"
                 aria-label="Search conversations"
-                className="h-9 w-full rounded-lg bg-[#efefef] pl-9 pr-9 text-[13px] text-[#262626] outline-none transition placeholder:text-[#8e8e8e] focus:bg-[#e9e9e9]"
+                className="h-9 w-full rounded-lg bg-subtle pl-9 pr-9 text-[13px] text-ink outline-none transition placeholder:text-muted focus:bg-hover"
               />
               {search ? (
                 <button
                   onClick={() => setSearch("")}
                   aria-label="Clear search"
-                  className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full bg-[#c7c7c7] text-white transition hover:bg-[#b0b0b0]"
+                  className="absolute right-2 top-1/2 grid size-5 -translate-y-1/2 place-items-center rounded-full bg-faint text-white transition hover:bg-strong"
                 >
                   <X size={12} strokeWidth={3} />
                 </button>
@@ -480,7 +486,7 @@ export default function MessagesApp({
                     key={conversation.id}
                     onClick={() => openConversation(conversation.id)}
                     className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${
-                      active ? "bg-[#efefef]" : "hover:bg-[#fafafa]"
+                      active ? "bg-hover" : "hover:bg-subtle"
                     }`}
                   >
                     <Avatar
@@ -492,7 +498,7 @@ export default function MessagesApp({
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <div className="flex items-baseline justify-between gap-3">
                         <p
-                          className={`truncate text-[14px] leading-[18px] text-[#262626] ${
+                          className={`truncate text-[14px] leading-[18px] text-ink ${
                             conversation.unreadCount > 0
                               ? "font-semibold"
                               : "font-medium"
@@ -503,7 +509,7 @@ export default function MessagesApp({
                         {conversation.lastMessage ? (
                           <span
                             suppressHydrationWarning
-                            className="shrink-0 text-[11px] leading-[17px] text-[#8e8e8e]"
+                            className="shrink-0 text-[11px] leading-[17px] text-muted"
                           >
                             {mounted
                               ? relativeTime(conversation.lastMessage.createdAt)
@@ -512,7 +518,7 @@ export default function MessagesApp({
                         ) : null}
                       </div>
 
-                      <p className="truncate text-[11.5px] leading-4 text-[#8e8e8e]">
+                      <p className="truncate text-[11.5px] leading-4 text-muted">
                         @{conversation.peer.username}
                       </p>
 
@@ -520,8 +526,8 @@ export default function MessagesApp({
                         <p
                           className={`min-w-0 flex-1 truncate text-[13px] leading-[17px] ${
                             conversation.unreadCount > 0
-                              ? "font-medium text-[#262626]"
-                              : "text-[#8e8e8e]"
+                              ? "font-medium text-ink"
+                              : "text-muted"
                           }`}
                         >
                           {messagePreview(
@@ -543,17 +549,17 @@ export default function MessagesApp({
               })
             ) : (
               <div className="px-6 py-12 text-center">
-                <p className="text-[14px] font-medium text-[#262626]">
+                <p className="text-[14px] font-medium text-ink">
                   {search.trim() ? "No results found." : "No messages yet."}
                 </p>
-                <p className="mt-1 text-[12px] leading-5 text-[#8e8e8e]">
+                <p className="mt-1 text-[12px] leading-5 text-muted">
                   {search.trim()
                     ? "Try searching for a name or username."
                     : "Find someone and start a conversation."}
                 </p>
                 <button
                   onClick={() => setComposerOpen(true)}
-                  className="mt-4 text-[13px] font-semibold text-[#0095f6] transition hover:text-[#1877f2]"
+                  className="mt-4 text-[13px] font-semibold text-accent transition hover:text-accent-hover"
                 >
                   New message
                 </button>
@@ -565,15 +571,15 @@ export default function MessagesApp({
         <main
           className={`${
             mobileChatOpen ? "flex" : "hidden"
-          } min-w-0 flex-1 flex-col bg-white sm:flex`}
+          } min-w-0 flex-1 flex-col bg-surface sm:flex`}
         >
           {selected ? (
             <>
-              <header className="flex h-[70px] shrink-0 items-center gap-3 border-b border-[#efefef] px-4">
+              <header className="flex h-[70px] shrink-0 items-center gap-3 border-b border-line-soft px-4">
                 <button
                   onClick={() => setMobileChatOpen(false)}
                   aria-label="Back to messages"
-                  className="-ml-1 grid size-8 place-items-center rounded-full text-[#262626] transition hover:bg-[#efefef] sm:hidden"
+                  className="-ml-1 grid size-8 place-items-center rounded-full text-ink transition hover:bg-hover sm:hidden"
                 >
                   <ChevronLeft size={22} strokeWidth={1.8} />
                 </button>
@@ -584,18 +590,18 @@ export default function MessagesApp({
                   online={selected.peerOnline}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-semibold leading-[18px] text-[#262626]">
+                  <p className="truncate text-[14px] font-semibold leading-[18px] text-ink">
                     {selected.peer.nickname}
                   </p>
                   <p
                     suppressHydrationWarning
-                    className="mt-0.5 truncate text-[12px] leading-4 text-[#8e8e8e]"
+                    className="mt-0.5 truncate text-[12px] leading-4 text-muted"
                   >
                     @{selected.peer.username}
                     {selected.peerOnline ? (
                       <>
                         {" · "}
-                        <span className="font-medium text-[#1a8917]">
+                        <span className="font-medium text-success">
                           Active now
                         </span>
                       </>
@@ -606,7 +612,7 @@ export default function MessagesApp({
                     )}
                   </p>
                 </div>
-                <span className="hidden shrink-0 text-[11px] text-[#b0b0b0] sm:block">
+                <span className="hidden shrink-0 text-[11px] text-faint sm:block">
                   Direct message
                 </span>
               </header>
@@ -618,17 +624,17 @@ export default function MessagesApp({
               >
                 <div className="mx-auto flex min-h-full w-full max-w-[700px] flex-col justify-end px-4 py-3">
                   {messagesLoading && messages.length === 0 ? (
-                    <p className="py-10 text-center text-[12px] text-[#8e8e8e]">
+                    <p className="py-10 text-center text-[12px] text-muted">
                       Loading messages…
                     </p>
                   ) : null}
 
                   {!messagesLoading && messages.length === 0 ? (
                     <div className="py-10 text-center">
-                      <p className="text-[14px] font-medium text-[#262626]">
+                      <p className="text-[14px] font-medium text-ink">
                         No messages yet
                       </p>
-                      <p className="mt-1 text-[12px] text-[#8e8e8e]">
+                      <p className="mt-1 text-[12px] text-muted">
                         Say hello to {selected.peer.nickname}.
                       </p>
                     </div>
@@ -662,7 +668,7 @@ export default function MessagesApp({
                         {isLast && mine ? (
                           <p
                             suppressHydrationWarning
-                            className="mt-1 pr-1 text-right text-[10.5px] leading-4 text-[#8e8e8e]"
+                            className="mt-1 pr-1 text-right text-[10.5px] leading-4 text-muted"
                           >
                             {message.id.startsWith("temp-")
                               ? "Sending…"
@@ -677,16 +683,16 @@ export default function MessagesApp({
                 </div>
               </div>
 
-              <div className="shrink-0 border-t border-[#efefef] px-3 py-3 sm:px-4">
+              <div className="shrink-0 border-t border-line-soft px-3 py-3 sm:px-4">
                 <div className="relative mx-auto flex max-w-[700px] items-center gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#dbdbdb] px-2.5 py-[5px] transition focus-within:border-[#b8b8b8]">
+                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-line px-2.5 py-[5px] transition focus-within:border-strong">
                     <button
                       type="button"
                       onClick={() => setEmojiOpen((current) => !current)}
                       onMouseDown={(event) => event.stopPropagation()}
                       aria-label="Insert emoji"
                       aria-expanded={emojiOpen}
-                      className="grid size-8 shrink-0 place-items-center rounded-full text-[#262626] transition hover:bg-[#efefef]"
+                      className="grid size-8 shrink-0 place-items-center rounded-full text-ink transition hover:bg-hover"
                     >
                       <Smile size={22} strokeWidth={1.6} />
                     </button>
@@ -702,14 +708,14 @@ export default function MessagesApp({
                       }}
                       placeholder="Message..."
                       aria-label={`Message ${selected.peer.nickname}`}
-                      className="h-6 min-w-0 flex-1 bg-transparent text-[14px] text-[#262626] outline-none placeholder:text-[#8e8e8e]"
+                      className="h-6 min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-muted"
                     />
                   </div>
                   {draft.trim() ? (
                     <button
                       onClick={() => void send()}
                       disabled={sending}
-                      className="shrink-0 text-[14px] font-semibold text-[#0095f6] transition hover:text-[#1877f2] disabled:opacity-60"
+                      className="shrink-0 text-[14px] font-semibold text-accent transition hover:text-accent-hover disabled:opacity-60"
                     >
                       Send
                     </button>
@@ -726,18 +732,18 @@ export default function MessagesApp({
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-              <span className="grid size-[96px] place-items-center rounded-full border-2 border-[#262626] text-[#262626]">
+              <span className="grid size-[96px] place-items-center rounded-full border-2 border-ink text-ink">
                 <Send size={40} strokeWidth={1.2} className="-translate-x-0.5" />
               </span>
-              <h2 className="mt-5 text-[20px] font-light text-[#262626]">
+              <h2 className="mt-5 text-[20px] font-light text-ink">
                 Your messages
               </h2>
-              <p className="mt-1 text-[13px] text-[#8e8e8e]">
+              <p className="mt-1 text-[13px] text-muted">
                 Send a message to start a chat.
               </p>
               <button
                 onClick={() => setComposerOpen(true)}
-                className="mt-4 text-[13px] font-semibold text-[#0095f6] transition hover:text-[#1877f2]"
+                className="mt-4 text-[13px] font-semibold text-accent transition hover:text-accent-hover"
               >
                 New message
               </button>
@@ -756,7 +762,7 @@ export default function MessagesApp({
       {error ? (
         <div
           role="alert"
-          className="pointer-events-none fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#262626] px-4 py-2 text-[12px] font-medium text-white shadow-lg"
+          className="pointer-events-none fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-full bg-inverse px-4 py-2 text-[12px] font-medium text-inverse-ink shadow-lg"
         >
           {error}
         </div>
@@ -769,7 +775,7 @@ function TimeDivider({ iso }: { iso: string }) {
   return (
     <div
       suppressHydrationWarning
-      className="py-3 text-center text-[10.5px] font-medium text-[#8e8e8e]"
+      className="py-3 text-center text-[10.5px] font-medium text-muted"
     >
       {dayLabel(iso)} {clockTime(iso)}
     </div>
@@ -795,7 +801,7 @@ function Bubble({
         suppressHydrationWarning
         title={`${dayLabel(message.createdAt)} ${clockTime(message.createdAt)}`}
         className={`max-w-[75%] whitespace-pre-wrap break-words rounded-[20px] px-3.5 py-2 text-[14px] leading-[1.4] ${
-          mine ? "bg-[#3797f0] text-white" : "bg-[#efefef] text-[#262626]"
+          mine ? "bg-[#3797f0] text-white" : "bg-bubble text-ink"
         } ${message.id.startsWith("temp-") ? "opacity-70" : ""}`}
       >
         {message.body}

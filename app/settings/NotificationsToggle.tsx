@@ -79,9 +79,9 @@ export default function NotificationsToggle({
     busy || status === "checking" || status === "unsupported" || status === "blocked";
 
   return (
-    <section className="mt-4 overflow-hidden rounded-2xl border border-[#dbdbdb] bg-white">
+    <section className="mt-4 overflow-hidden rounded-2xl border border-line bg-surface">
       <div className="flex items-start gap-4 px-5 py-4">
-        <div className="grid size-9 shrink-0 place-items-center rounded-full bg-[#fafafa] text-[#262626]">
+        <div className="grid size-9 shrink-0 place-items-center rounded-full bg-subtle text-ink">
           {on ? (
             <Bell size={18} strokeWidth={1.8} />
           ) : (
@@ -90,22 +90,22 @@ export default function NotificationsToggle({
         </div>
 
         <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-semibold text-[#262626]">
+          <h2 className="text-[15px] font-semibold text-ink">
             Notifications
           </h2>
-          <p className="mt-0.5 text-[12px] leading-4 text-[#8e8e8e]">
+          <p className="mt-0.5 text-[12px] leading-4 text-muted">
             Get a notification when someone messages you, even when this tab is
             closed. On iPhone, add HiJordan to your Home Screen first.
           </p>
 
           {status === "unsupported" ? (
-            <p className="mt-2 text-[12px] text-[#8e8e8e]">
+            <p className="mt-2 text-[12px] text-muted">
               This browser doesn&apos;t support notifications.
             </p>
           ) : null}
 
           {status === "blocked" ? (
-            <p className="mt-2 text-[12px] text-[#ed4956]">
+            <p className="mt-2 text-[12px] text-danger">
               Notifications are blocked. Allow them in your browser settings,
               then reload this page.
             </p>
@@ -115,7 +115,7 @@ export default function NotificationsToggle({
             <p
               role="status"
               className={`mt-2 text-[12px] ${
-                on ? "text-[#1a8917]" : "text-[#8e8e8e]"
+                on ? "text-success" : "text-muted"
               }`}
             >
               {message}
@@ -131,11 +131,11 @@ export default function NotificationsToggle({
           onClick={() => void toggle()}
           disabled={disabled}
           className={`mt-0.5 flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition ${
-            on ? "bg-[#0095f6]" : "bg-[#dbdbdb]"
+            on ? "bg-accent" : "bg-line"
           } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
         >
           <span
-            className={`size-5 rounded-full bg-white shadow-sm transition ${
+            className={`size-5 rounded-full bg-surface shadow-sm transition ${
               on ? "translate-x-5" : "translate-x-0"
             }`}
           />

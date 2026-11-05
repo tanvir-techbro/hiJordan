@@ -138,7 +138,7 @@ export async function sendMessagePush(input: {
     conversationId: input.conversationId,
     messageId: input.messageId,
     tag: input.conversationId,
-    url: `/chat/${input.conversationId}`,
+    url: `/?c=${input.conversationId}`,
   });
 
   await Promise.all(

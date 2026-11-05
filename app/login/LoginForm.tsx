@@ -54,35 +54,35 @@ export default function LoginForm({
   };
 
   return (
-    <div className="min-h-dvh bg-[#fafafa]">
+    <div className="min-h-dvh bg-canvas">
       <main className="mx-auto flex min-h-dvh w-full max-w-[940px] flex-col items-center justify-center gap-10 px-5 py-10 lg:flex-row lg:gap-24">
         <section className="w-full max-w-[380px] text-center lg:text-left">
-          <p className="font-script text-[64px] leading-none text-[#262626] lg:text-[82px]">
+          <p className="font-script text-[64px] leading-none text-ink lg:text-[82px]">
             HiJordan
           </p>
-          <p className="mt-3 text-[15px] leading-6 text-[#8e8e8e]">
+          <p className="mt-3 text-[15px] leading-6 text-muted">
             Private messages, one conversation at a time.
           </p>
 
           <div className="mx-auto mt-8 hidden w-full max-w-[330px] flex-col gap-2 lg:flex">
-            <div className="max-w-[78%] rounded-[20px] rounded-bl-md bg-[#efefef] px-4 py-2.5 text-left text-[13.5px] text-[#262626]">
+            <div className="max-w-[78%] rounded-[20px] rounded-bl-md bg-bubble px-4 py-2.5 text-left text-[13.5px] text-ink">
               hey! are you free later?
             </div>
             <div className="ml-auto max-w-[78%] rounded-[20px] rounded-br-md bg-[#3797f0] px-4 py-2.5 text-left text-[13.5px] text-white">
               always. what&apos;s up?
             </div>
-            <p className="mt-2 text-[11px] text-[#b0b0b0]">
+            <p className="mt-2 text-[11px] text-faint">
               No photos. No noise. Just names and messages.
             </p>
           </div>
         </section>
 
         <section className="w-full max-w-[380px]">
-          <div className="rounded-2xl border border-[#dbdbdb] bg-white p-6">
-            <h1 className="text-center text-[20px] font-semibold tracking-[-0.01em] text-[#262626]">
+          <div className="rounded-2xl border border-line bg-surface p-6">
+            <h1 className="text-center text-[20px] font-semibold tracking-[-0.01em] text-ink">
               {mode === "signin" ? "Sign in to HiJordan" : "Create your account"}
             </h1>
-            <p className="mt-1 text-center text-[12px] leading-4 text-[#8e8e8e]">
+            <p className="mt-1 text-center text-[12px] leading-4 text-muted">
               {mode === "signin"
                 ? "Welcome back. Pick up where you left off."
                 : "Email and password for now. Google works too when configured."}
@@ -103,14 +103,14 @@ export default function LoginForm({
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                className={`h-11 w-full rounded-lg border bg-[#fafafa] px-3 text-[14px] text-[#262626] outline-none transition placeholder:text-[#8e8e8e] focus:bg-white ${
+                className={`h-11 w-full rounded-lg border bg-subtle px-3 text-[14px] text-ink outline-none transition placeholder:text-muted focus:bg-surface ${
                   fieldError("email")
-                    ? "border-[#ed4956]"
-                    : "border-[#dbdbdb] focus:border-[#a8a8a8]"
+                    ? "border-danger"
+                    : "border-line focus:border-strong"
                 }`}
               />
               {fieldError("email") ? (
-                <p role="alert" className="mt-1.5 text-[12px] text-[#ed4956]">
+                <p role="alert" className="mt-1.5 text-[12px] text-danger">
                   {fieldError("email")}
                 </p>
               ) : null}
@@ -131,17 +131,17 @@ export default function LoginForm({
                   autoComplete={
                     mode === "signin" ? "current-password" : "new-password"
                   }
-                  className={`h-11 w-full rounded-lg border bg-[#fafafa] pl-3 pr-11 text-[14px] text-[#262626] outline-none transition placeholder:text-[#8e8e8e] focus:bg-white ${
+                  className={`h-11 w-full rounded-lg border bg-subtle pl-3 pr-11 text-[14px] text-ink outline-none transition placeholder:text-muted focus:bg-surface ${
                     fieldError("password")
-                      ? "border-[#ed4956]"
-                      : "border-[#dbdbdb] focus:border-[#a8a8a8]"
+                      ? "border-danger"
+                      : "border-line focus:border-strong"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((current) => !current)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
-                  className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-[#8e8e8e] transition hover:bg-[#efefef] hover:text-[#262626]"
+                  className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-muted transition hover:bg-hover hover:text-ink"
                 >
                   {showPassword ? (
                     <EyeOff size={17} strokeWidth={1.8} />
@@ -151,11 +151,11 @@ export default function LoginForm({
                 </button>
               </div>
               {fieldError("password") ? (
-                <p role="alert" className="mt-1.5 text-[12px] text-[#ed4956]">
+                <p role="alert" className="mt-1.5 text-[12px] text-danger">
                   {fieldError("password")}
                 </p>
               ) : mode === "signup" ? (
-                <p className="mt-1.5 text-[11px] text-[#8e8e8e]">
+                <p className="mt-1.5 text-[11px] text-muted">
                   Use at least 8 characters.
                 </p>
               ) : null}
@@ -173,16 +173,16 @@ export default function LoginForm({
                     onChange={(event) => setConfirm(event.target.value)}
                     placeholder="Confirm password"
                     autoComplete="new-password"
-                    className={`mt-3 h-11 w-full rounded-lg border bg-[#fafafa] px-3 text-[14px] text-[#262626] outline-none transition placeholder:text-[#8e8e8e] focus:bg-white ${
+                    className={`mt-3 h-11 w-full rounded-lg border bg-subtle px-3 text-[14px] text-ink outline-none transition placeholder:text-muted focus:bg-surface ${
                       fieldError("confirm")
-                        ? "border-[#ed4956]"
-                        : "border-[#dbdbdb] focus:border-[#a8a8a8]"
+                        ? "border-danger"
+                        : "border-line focus:border-strong"
                     }`}
                   />
                   {fieldError("confirm") ? (
                     <p
                       role="alert"
-                      className="mt-1.5 text-[12px] text-[#ed4956]"
+                      className="mt-1.5 text-[12px] text-danger"
                     >
                       {fieldError("confirm")}
                     </p>
@@ -193,7 +193,7 @@ export default function LoginForm({
               {generalError ? (
                 <p
                   role="alert"
-                  className="mt-3 rounded-lg border border-[#f2c4c8] bg-[#fff5f6] px-3 py-2.5 text-[12px] leading-4 text-[#b4232e]"
+                  className="mt-3 rounded-lg border border-danger/40 bg-danger-soft px-3 py-2.5 text-[12px] leading-4 text-danger"
                 >
                   {generalError}
                 </p>
@@ -202,7 +202,7 @@ export default function LoginForm({
               <button
                 type="submit"
                 disabled={pending}
-                className="mt-4 h-11 w-full rounded-lg bg-[#0095f6] text-[14px] font-semibold text-white transition hover:bg-[#1877f2] disabled:cursor-not-allowed disabled:bg-[#b2dffc]"
+                className="mt-4 h-11 w-full rounded-lg bg-accent text-[14px] font-semibold text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:bg-accent-soft"
               >
                 {pending
                   ? mode === "signin"
@@ -217,17 +217,17 @@ export default function LoginForm({
             {googleEnabled ? (
               <>
                 <div className="my-5 flex items-center gap-3">
-                  <span className="h-px flex-1 bg-[#efefef]" />
-                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-[#b0b0b0]">
+                  <span className="h-px flex-1 bg-line-soft" />
+                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-faint">
                     or
                   </span>
-                  <span className="h-px flex-1 bg-[#efefef]" />
+                  <span className="h-px flex-1 bg-line-soft" />
                 </div>
 
                 <form action={signInWithGoogleAction}>
                   <button
                     type="submit"
-                    className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-[#dbdbdb] bg-white text-[13.5px] font-semibold text-[#262626] transition hover:bg-[#fafafa]"
+                    className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-line bg-surface text-[13.5px] font-semibold text-ink transition hover:bg-subtle"
                   >
                     <GoogleMark />
                     Continue with Google
@@ -236,15 +236,15 @@ export default function LoginForm({
               </>
             ) : null}
 
-            <div className="mt-5 border-t border-[#efefef] pt-4 text-center">
-              <p className="text-[12.5px] text-[#8e8e8e]">
+            <div className="mt-5 border-t border-line-soft pt-4 text-center">
+              <p className="text-[12.5px] text-muted">
                 {mode === "signin" ? (
                   <>
                     New to HiJordan?{" "}
                     <button
                       type="button"
                       onClick={switchMode}
-                      className="font-semibold text-[#0095f6] transition hover:text-[#1877f2]"
+                      className="font-semibold text-accent transition hover:text-accent-hover"
                     >
                       Create an account
                     </button>
@@ -255,7 +255,7 @@ export default function LoginForm({
                     <button
                       type="button"
                       onClick={switchMode}
-                      className="font-semibold text-[#0095f6] transition hover:text-[#1877f2]"
+                      className="font-semibold text-accent transition hover:text-accent-hover"
                     >
                       Sign in
                     </button>
@@ -265,7 +265,7 @@ export default function LoginForm({
             </div>
           </div>
 
-          <p className="mt-4 px-2 text-center text-[11.5px] leading-4 text-[#8e8e8e]">
+          <p className="mt-4 px-2 text-center text-[11.5px] leading-4 text-muted">
             No photos. No noise. Just a name, a username, and messages.
           </p>
         </section>
