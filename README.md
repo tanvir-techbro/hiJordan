@@ -70,6 +70,7 @@ details.
 - `conversations` — one row per 1:1 conversation with a unique `direct_key`
 - `conversation_members` — membership and last-read timestamps
 - `messages` — message bodies (1–4000 characters)
+- `push_subscriptions` — browser push endpoints per user (web notifications)
 
 The script also adds `password_hash` to databases created before email/password sign-in existed.
 
@@ -83,6 +84,33 @@ The script also adds `password_hash` to databases created before email/password 
 
 The Google button only appears when both values are present. Leave them empty to ship with email/password only.
 
+## Web push notifications
+
+People can turn on browser notifications from **Settings → Notifications**. A
+notification is sent to the other person whenever a message arrives, even if the
+tab is closed. While a HiJordan tab is visible and focused, the service worker
+stays quiet because the app already updates itself.
+
+Notifications need a VAPID key pair:
+
+```bash
+npm run push:keys
+```
+
+Put the output in `.env.local` (and in the host's environment variables):
+
+```bash
+NEXT_PUBLIC_VAPID_PUBLIC_KEY="..."
+VAPID_PRIVATE_KEY="..."
+VAPID_SUBJECT="https://your-domain.com"   # or mailto:you@example.com
+```
+
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY` is inlined at build time, so set it **before**
+deploying and redeploy after changing it. Without the keys the app still works;
+the toggle just explains that notifications aren't configured.
+
+The service worker lives in `public/sw.js` and must stay at the site root.
+
 ## Deploying
 
 The app runs on any host that builds Next.js with Node.js. Add these environment
@@ -94,6 +122,8 @@ variables in the host's dashboard:
 - `AUTH_URL` — **do not set it to localhost**. Either omit it (recommended; the
   deployed request host is used) or set it to your exact production URL.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — optional
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — web push
+  (see [Web push notifications](#web-push-notifications))
 
 If you use Google sign-in, add the production redirect URI in Google Cloud:
 `https://your-production-domain/api/auth/callback/google`.

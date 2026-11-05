@@ -40,6 +40,16 @@ CREATE TABLE IF NOT EXISTS conversation_members (
   PRIMARY KEY (conversation_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  endpoint text PRIMARY KEY,
+  user_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  user_agent text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS messages (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
@@ -58,3 +68,6 @@ CREATE INDEX IF NOT EXISTS messages_conversation_created_idx
 
 CREATE INDEX IF NOT EXISTS messages_sender_idx
   ON messages (sender_id);
+
+CREATE INDEX IF NOT EXISTS push_subscriptions_user_idx
+  ON push_subscriptions (user_id);

@@ -1,10 +1,12 @@
 import { getMobileUser, json, unauthorized } from "@/lib/mobile-auth";
+import { sendMessagePush } from "@/lib/push";
 import {
   getConversationState,
   getMessages,
   sendMessage,
 } from "@/lib/queries";
 import { isUuid } from "@/lib/validation";
+import { after } from "next/server";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -54,6 +56,16 @@ export async function POST(request: Request, { params }: RouteParams) {
   if (!message) {
     return json({ error: "Conversation not found." }, 404);
   }
+
+  after(async () => {
+    await sendMessagePush({
+      conversationId: id,
+      messageId: message.id,
+      senderId: user.id,
+      senderName: user.nickname ?? user.username ?? "New message",
+      body: message.body,
+    });
+  });
 
   return json({ message }, 201);
 }

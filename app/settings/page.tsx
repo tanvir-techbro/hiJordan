@@ -33,6 +33,7 @@ export default async function SettingsPage() {
       initialNickname={user.nickname}
       memberSince={memberSince}
       signInMethod={signInMethod}
+      pushPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
     />
   );
 }

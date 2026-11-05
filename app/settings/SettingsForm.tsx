@@ -11,6 +11,7 @@ import {
   validateUsername,
 } from "@/lib/validation";
 import Avatar from "@/components/Avatar";
+import NotificationsToggle from "./NotificationsToggle";
 import { signOutAction, updateProfileAction } from "./actions";
 
 export default function SettingsForm({
@@ -19,12 +20,14 @@ export default function SettingsForm({
   initialNickname,
   memberSince,
   signInMethod,
+  pushPublicKey,
 }: {
   email: string;
   initialUsername: string;
   initialNickname: string;
   memberSince: string;
   signInMethod: string;
+  pushPublicKey: string;
 }) {
   const [state, formAction, pending] = useActionState<
     ProfileFormState | null,
@@ -193,6 +196,8 @@ export default function SettingsForm({
             </div>
           </form>
         </section>
+
+        <NotificationsToggle publicKey={pushPublicKey} />
 
         <section className="mt-4 overflow-hidden rounded-2xl border border-[#dbdbdb] bg-white">
           <div className="border-b border-[#efefef] px-5 py-4">

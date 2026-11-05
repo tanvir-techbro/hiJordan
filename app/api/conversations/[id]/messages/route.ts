@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import {
   getConversationPeer,
   getMessages,
   sendMessage,
 } from "@/lib/queries";
+import { sendMessagePush } from "@/lib/push";
 import { getCurrentUser, isUuid } from "@/lib/session";
 
 interface RouteParams {
@@ -61,6 +63,16 @@ export async function POST(request: Request, { params }: RouteParams) {
   if (!message) {
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
+
+  after(async () => {
+    await sendMessagePush({
+      conversationId: id,
+      messageId: message.id,
+      senderId: user.id,
+      senderName: user.nickname,
+      body: message.body,
+    });
+  });
 
   return NextResponse.json({ message }, { status: 201 });
 }
