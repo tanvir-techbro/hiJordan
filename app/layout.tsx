@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 };
 
 // Applies the saved theme before the first paint so dark mode does not flash.
-const themeScript = `(function(){try{var t=localStorage.getItem("hijordan-theme")||"system";var s=t==="light-grey"||t==="dark-grey";var d=t==="dark-black"||t==="dark-grey"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.dataset.lightStyle=s?"grey":"black";r.dataset.darkStyle=s?"grey":"black";r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem("hijordan-theme")||"system";if(t==="dark")t="dark-black";var s=t==="light-grey"||t==="dark-grey";var d=t==="dark-black"||t==="dark-grey"||(t==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);var r=document.documentElement;r.classList.toggle("dark",d);r.dataset.lightStyle=s?"grey":"black";r.dataset.darkStyle=s?"grey":"black";r.style.colorScheme=d?"dark":"light";}catch(e){}})();`;
 
 export default function RootLayout({
   children,

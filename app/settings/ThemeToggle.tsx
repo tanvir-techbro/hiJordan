@@ -26,6 +26,8 @@ function systemPrefersDark(): boolean {
 
 function readTheme(): Theme {
   const saved = localStorage.getItem(STORAGE_KEY);
+  // Migrate choices saved by earlier versions of the toggle.
+  if (saved === "dark") return "dark-black";
   const found = THEMES.find((theme) => theme.value === saved);
   return found ? found.value : "system";
 }
@@ -45,13 +47,14 @@ function applyTheme(theme: Theme): void {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   useEffect(() => {
     setTheme(readTheme());
   }, []);
 
   useEffect(() => {
+    if (!theme) return;
     applyTheme(theme);
     localStorage.setItem(STORAGE_KEY, theme);
 

@@ -58,6 +58,7 @@ export default function MessagesApp({
   const messageSeq = useRef(0);
   const nearBottom = useRef(true);
   const lastMarkedMessage = useRef<Record<string, string>>({});
+  const messageCache = useRef<Map<string, ChatMessage[]>>(new Map());
   const selectedIdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -107,7 +108,9 @@ export default function MessagesApp({
           const pending = current.filter((message) =>
             message.id.startsWith("temp-"),
           );
-          return [...data.messages, ...pending];
+          const next = [...data.messages, ...pending];
+          messageCache.current.set(conversationId, next);
+          return next;
         });
 
         const last = data.messages[data.messages.length - 1];
@@ -153,9 +156,17 @@ export default function MessagesApp({
     }
 
     nearBottom.current = true;
-    setMessages([]);
-    setMessagesLoading(true);
-    void loadMessages(selectedId, true);
+    const cached = messageCache.current.get(selectedId);
+    if (cached) {
+      // Show the conversation immediately, then refresh in the background.
+      setMessages(cached);
+      setMessagesLoading(false);
+      void loadMessages(selectedId, false);
+    } else {
+      setMessages([]);
+      setMessagesLoading(true);
+      void loadMessages(selectedId, true);
+    }
   }, [selectedId, loadMessages]);
 
   useEffect(() => {
@@ -316,7 +327,11 @@ export default function MessagesApp({
     setError(null);
     setSending(true);
     nearBottom.current = true;
-    setMessages((current) => [...current, temporaryMessage]);
+    setMessages((current) => {
+      const next = [...current, temporaryMessage];
+      messageCache.current.set(conversationId, next);
+      return next;
+    });
     setConversations((current) =>
       current.map((conversation) =>
         conversation.id === conversationId
@@ -353,9 +368,12 @@ export default function MessagesApp({
             (message) => message.id !== temporaryId,
           );
           if (withoutTemporary.some((message) => message.id === saved.id)) {
+            messageCache.current.set(conversationId, withoutTemporary);
             return withoutTemporary;
           }
-          return [...withoutTemporary, saved];
+          const next = [...withoutTemporary, saved];
+          messageCache.current.set(conversationId, next);
+          return next;
         });
       }
       setConversations((current) =>
