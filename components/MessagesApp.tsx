@@ -13,6 +13,7 @@ import {
 import {
   ChevronLeft,
   Copy,
+  MoreVertical,
   Pencil,
   Reply,
   Search,
@@ -233,7 +234,13 @@ export default function MessagesApp({
 
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Element | null;
-      if (target?.closest("[data-message-menu], [data-delete-dialog]")) return;
+      if (
+        target?.closest(
+          "[data-message-menu], [data-delete-dialog], [data-message-menu-trigger]",
+        )
+      ) {
+        return;
+      }
       setMenu(null);
       setConfirmDelete(null);
     };
@@ -362,12 +369,16 @@ export default function MessagesApp({
     if (message.id.startsWith("temp-")) return;
     const mine = message.senderId === currentUser.id;
     const width = 190;
-    const height = mine ? 172 : 100;
-    setMenu({
-      message,
-      x: Math.max(8, Math.min(x, window.innerWidth - width - 8)),
-      y: Math.max(8, Math.min(y, window.innerHeight - height - 8)),
-    });
+    const height = mine ? 214 : 140;
+    setMenu((current) =>
+      current?.message.id === message.id
+        ? null
+        : {
+            message,
+            x: Math.max(8, Math.min(x, window.innerWidth - width - 8)),
+            y: Math.max(8, Math.min(y, window.innerHeight - height - 8)),
+          },
+    );
   };
 
   const startReply = (message: ChatMessage) => {
@@ -887,7 +898,7 @@ export default function MessagesApp({
                 onScroll={handleScroll}
                 className="thin-scrollbar flex-1 overflow-y-auto"
               >
-                <div className="mx-auto flex min-h-full w-full flex-col justify-end px-4 py-3 sm:px-6">
+                <div className="mx-auto flex min-h-full w-full max-w-[920px] flex-col justify-end px-4 py-3 sm:px-6">
                   {messagesLoading && messages.length === 0 ? (
                     <p className="py-10 text-center text-[12px] text-muted">
                       Loading messages…
@@ -950,7 +961,7 @@ export default function MessagesApp({
               </div>
 
               <div className="shrink-0 border-t border-line-soft px-3 py-3 sm:px-4">
-                <div className="relative mx-auto w-full">
+                <div className="relative mx-auto w-full max-w-[920px]">
                   {editing || replyTarget ? (
                     <div className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-subtle px-3 py-2">
                       <span className="h-8 w-1 shrink-0 rounded-full bg-accent" />
@@ -1065,6 +1076,17 @@ export default function MessagesApp({
           style={{ left: menu.x, top: menu.y }}
           className="fixed z-50 w-[190px] overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-2xl"
         >
+          <div
+            className="mb-1 border-b border-line-soft px-3 pb-2 pt-1.5"
+          >
+            <p
+              suppressHydrationWarning
+              className="text-[11px] font-medium text-muted"
+            >
+              {dayLabel(menu.message.createdAt)} ·{" "}
+              {clockTime(menu.message.createdAt)}
+            </p>
+          </div>
           <MenuItem
             icon={<Reply size={15} strokeWidth={2} />}
             label="Reply"
@@ -1190,83 +1212,104 @@ function Bubble({
 
   return (
     <div
-      className={`flex ${mine ? "justify-end" : "justify-start"} ${
+      className={`group flex ${mine ? "justify-end" : "justify-start"} ${
         newGroup ? "mt-2.5" : "mt-[3px]"
       }`}
     >
       <div
-        className={`flex max-w-[85%] flex-col lg:max-w-[640px] ${
-          mine ? "items-end" : "items-start"
+        className={`flex max-w-[85%] items-center gap-1 lg:max-w-[660px] ${
+          mine ? "flex-row-reverse" : "flex-row"
         }`}
       >
         <div
-          suppressHydrationWarning
-          data-message-id={message.id}
-          data-mine={mine ? "true" : "false"}
-          data-reply-to={message.replyTo?.id}
-          onContextMenu={(event) => {
-            event.preventDefault();
-            onOpenMenu(message, event.clientX, event.clientY);
-          }}
-          onTouchStart={(event) => {
-            if (message.id.startsWith("temp-")) return;
-            const touch = event.touches[0];
-            if (!touch) return;
-            cancelLongPress();
-            origin.current = { x: touch.clientX, y: touch.clientY };
-            timer.current = window.setTimeout(() => {
-              timer.current = null;
-              onOpenMenu(message, touch.clientX, touch.clientY);
-            }, 450);
-          }}
-          onTouchMove={(event) => {
-            const touch = event.touches[0];
-            const start = origin.current;
-            if (!touch || !start) return;
-            if (
-              Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 10
-            ) {
-              cancelLongPress();
-            }
-          }}
-          onTouchEnd={cancelLongPress}
-          onTouchCancel={cancelLongPress}
-          title={`${dayLabel(message.createdAt)} ${clockTime(message.createdAt)}`}
-          className={`max-w-full whitespace-pre-wrap break-words rounded-[20px] px-3.5 py-2 text-[14px] leading-[1.4] ${
-            mine ? "bg-[#3797f0] text-white" : "bg-bubble text-ink"
-          } ${message.id.startsWith("temp-") ? "opacity-70" : ""}`}
+          className={`flex min-w-0 flex-col ${
+            mine ? "items-end" : "items-start"
+          }`}
         >
-          {message.replyTo ? (
-            <div
-              className={`mb-1.5 overflow-hidden rounded-lg border-l-[3px] px-2 py-1 ${
-                mine
-                  ? "border-white/70 bg-white/15"
-                  : "border-[#3797f0] bg-black/[0.05] dark:bg-white/[0.07]"
-              }`}
-            >
-              <p
-                className={`truncate text-[11px] font-semibold leading-4 ${
-                  mine ? "text-white" : "text-accent"
+          <div
+            suppressHydrationWarning
+            data-message-id={message.id}
+            data-mine={mine ? "true" : "false"}
+            data-reply-to={message.replyTo?.id}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              onOpenMenu(message, event.clientX, event.clientY);
+            }}
+            onTouchStart={(event) => {
+              if (message.id.startsWith("temp-")) return;
+              const touch = event.touches[0];
+              if (!touch) return;
+              cancelLongPress();
+              origin.current = { x: touch.clientX, y: touch.clientY };
+              timer.current = window.setTimeout(() => {
+                timer.current = null;
+                onOpenMenu(message, touch.clientX, touch.clientY);
+              }, 450);
+            }}
+            onTouchMove={(event) => {
+              const touch = event.touches[0];
+              const start = origin.current;
+              if (!touch || !start) return;
+              if (
+                Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 10
+              ) {
+                cancelLongPress();
+              }
+            }}
+            onTouchEnd={cancelLongPress}
+            onTouchCancel={cancelLongPress}
+            title={`${dayLabel(message.createdAt)} ${clockTime(message.createdAt)}`}
+            className={`max-w-full whitespace-pre-wrap break-words rounded-[20px] px-3.5 py-2 text-[14px] leading-[1.4] ${
+              mine ? "bg-[#3797f0] text-white" : "bg-bubble text-ink"
+            } ${message.id.startsWith("temp-") ? "opacity-70" : ""}`}
+          >
+            {message.replyTo ? (
+              <div
+                className={`mb-1.5 overflow-hidden rounded-lg border-l-[3px] px-2 py-1 ${
+                  mine
+                    ? "border-white/70 bg-white/15"
+                    : "border-[#3797f0] bg-black/[0.05] dark:bg-white/[0.07]"
                 }`}
               >
-                {message.replyTo.senderName}
-              </p>
-              <p
-                className={`line-clamp-2 text-[12px] leading-4 ${
-                  mine ? "text-white/80" : "text-muted"
-                }`}
-              >
-                {message.replyTo.body}
-              </p>
-            </div>
+                <p
+                  className={`truncate text-[11px] font-semibold leading-4 ${
+                    mine ? "text-white" : "text-accent"
+                  }`}
+                >
+                  {message.replyTo.senderName}
+                </p>
+                <p
+                  className={`line-clamp-2 text-[12px] leading-4 ${
+                    mine ? "text-white/80" : "text-muted"
+                  }`}
+                >
+                  {message.replyTo.body}
+                </p>
+              </div>
+            ) : null}
+            {message.body}
+          </div>
+          {message.editedAt && !message.id.startsWith("temp-") ? (
+            <span className="mt-0.5 px-1 text-[10px] leading-3 text-muted">
+              Edited
+            </span>
           ) : null}
-          {message.body}
         </div>
-        {message.editedAt && !message.id.startsWith("temp-") ? (
-          <span className="mt-0.5 px-1 text-[10px] leading-3 text-muted">
-            Edited
-          </span>
-        ) : null}
+
+        {message.id.startsWith("temp-") ? null : (
+          <button
+            type="button"
+            data-message-menu-trigger
+            aria-label="Message options"
+            onClick={(event) => {
+              const rect = event.currentTarget.getBoundingClientRect();
+              onOpenMenu(message, rect.left, rect.bottom + 4);
+            }}
+            className="grid size-7 shrink-0 place-items-center rounded-full text-muted opacity-70 transition hover:bg-hover hover:text-ink focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          >
+            <MoreVertical size={16} strokeWidth={2} />
+          </button>
+        )}
       </div>
     </div>
   );
