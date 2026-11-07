@@ -55,10 +55,17 @@ CREATE TABLE IF NOT EXISTS messages (
   conversation_id uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   sender_id uuid NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
   body text NOT NULL,
+  reply_to_id uuid REFERENCES messages(id) ON DELETE SET NULL,
+  edited_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT messages_body_length
     CHECK (char_length(btrim(body)) BETWEEN 1 AND 4000)
 );
+
+-- For databases created before replies and editing were added.
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to_id uuid
+  REFERENCES messages(id) ON DELETE SET NULL;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS edited_at timestamptz;
 
 CREATE INDEX IF NOT EXISTS conversation_members_user_idx
   ON conversation_members (user_id);

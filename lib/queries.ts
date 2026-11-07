@@ -41,7 +41,24 @@ interface MessageRow {
   sender_id: string;
   body: string;
   created_at: Date;
+  edited_at: Date | null;
+  reply_to_id: string | null;
+  reply_body: string | null;
+  reply_sender_id: string | null;
+  reply_sender_name: string | null;
 }
+
+const MESSAGE_COLUMNS = `
+  m.id,
+  m.conversation_id,
+  m.sender_id,
+  m.body,
+  m.created_at,
+  m.edited_at,
+  m.reply_to_id,
+  r.body AS reply_body,
+  r.sender_id AS reply_sender_id,
+  COALESCE(ru.nickname, ru.username) AS reply_sender_name`;
 
 export interface ConversationState {
   peer: PublicUser;
@@ -55,12 +72,24 @@ function iso(value: Date | string): string {
 }
 
 function mapMessage(row: MessageRow): ChatMessage {
+  const replyTo =
+    row.reply_to_id && row.reply_body !== null && row.reply_sender_id
+      ? {
+          id: row.reply_to_id,
+          body: row.reply_body,
+          senderId: row.reply_sender_id,
+          senderName: row.reply_sender_name ?? "Unknown",
+        }
+      : null;
+
   return {
     id: row.id,
     conversationId: row.conversation_id,
     senderId: row.sender_id,
     body: row.body,
     createdAt: iso(row.created_at),
+    editedAt: row.edited_at ? iso(row.edited_at) : null,
+    replyTo,
   };
 }
 
@@ -341,8 +370,10 @@ export async function getMessages(
 ): Promise<ChatMessage[]> {
   const { rows } = await pool.query<MessageRow>(
     `SELECT * FROM (
-       SELECT m.id, m.conversation_id, m.sender_id, m.body, m.created_at
+       SELECT ${MESSAGE_COLUMNS}
        FROM messages AS m
+       LEFT JOIN messages AS r ON r.id = m.reply_to_id
+       LEFT JOIN app_users AS ru ON ru.id = r.sender_id
        WHERE m.conversation_id = $2
          AND EXISTS (
            SELECT 1 FROM conversation_members AS cm
@@ -357,27 +388,81 @@ export async function getMessages(
   return rows.map(mapMessage);
 }
 
+async function getMessageById(messageId: string): Promise<ChatMessage | null> {
+  const { rows } = await pool.query<MessageRow>(
+    `SELECT ${MESSAGE_COLUMNS}
+     FROM messages AS m
+     LEFT JOIN messages AS r ON r.id = m.reply_to_id
+     LEFT JOIN app_users AS ru ON ru.id = r.sender_id
+     WHERE m.id = $1`,
+    [messageId],
+  );
+  return rows[0] ? mapMessage(rows[0]) : null;
+}
+
+export async function messageBelongsToConversation(
+  messageId: string,
+  conversationId: string,
+): Promise<boolean> {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM messages WHERE id = $1 AND conversation_id = $2`,
+    [messageId, conversationId],
+  );
+  return Boolean(rows[0]);
+}
+
 export async function sendMessage(
   userId: string,
   conversationId: string,
   body: string,
+  replyToId: string | null = null,
 ): Promise<ChatMessage | null> {
-  const { rows } = await pool.query<MessageRow>(
-    `INSERT INTO messages (conversation_id, sender_id, body)
-     SELECT $2, $1, $3
+  const { rows } = await pool.query<{ id: string }>(
+    `INSERT INTO messages (conversation_id, sender_id, body, reply_to_id)
+     SELECT $2, $1, $3, $4
      WHERE EXISTS (
        SELECT 1 FROM conversation_members
        WHERE conversation_id = $2 AND user_id = $1
      )
-     RETURNING *`,
-    [userId, conversationId, body],
+     RETURNING id`,
+    [userId, conversationId, body, replyToId],
   );
   if (!rows[0]) return null;
 
   await pool.query(`UPDATE conversations SET updated_at = now() WHERE id = $1`, [
     conversationId,
   ]);
-  return mapMessage(rows[0]);
+  return getMessageById(rows[0].id);
+}
+
+export async function editMessage(
+  userId: string,
+  conversationId: string,
+  messageId: string,
+  body: string,
+): Promise<ChatMessage | null> {
+  const { rows } = await pool.query<{ id: string }>(
+    `UPDATE messages
+     SET body = $4, edited_at = now()
+     WHERE id = $3 AND conversation_id = $2 AND sender_id = $1
+     RETURNING id`,
+    [userId, conversationId, messageId, body],
+  );
+  if (!rows[0]) return null;
+  return getMessageById(rows[0].id);
+}
+
+export async function deleteMessage(
+  userId: string,
+  conversationId: string,
+  messageId: string,
+): Promise<boolean> {
+  const result = await pool.query(
+    `DELETE FROM messages
+     WHERE id = $3 AND conversation_id = $2 AND sender_id = $1`,
+    [userId, conversationId, messageId],
+  );
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function markConversationRead(

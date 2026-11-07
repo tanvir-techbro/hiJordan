@@ -8,12 +8,21 @@ export interface SessionUser extends PublicUser {
   email: string;
 }
 
+export interface MessageReply {
+  id: string;
+  body: string;
+  senderId: string;
+  senderName: string;
+}
+
 export interface ChatMessage {
   id: string;
   conversationId: string;
   senderId: string;
   body: string;
   createdAt: string;
+  replyTo?: MessageReply | null;
+  editedAt?: string | null;
 }
 
 export interface ConversationSummary {

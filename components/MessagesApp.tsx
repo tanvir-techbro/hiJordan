@@ -8,14 +8,19 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   ChevronLeft,
+  Copy,
+  Pencil,
+  Reply,
   Search,
   Send,
   Settings,
   Smile,
   SquarePen,
+  Trash2,
   X,
 } from "lucide-react";
 import { clockTime, dayLabel, messagePreview, relativeTime } from "@/lib/format";
@@ -54,6 +59,14 @@ export default function MessagesApp({
   const [mounted, setMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+  const [editing, setEditing] = useState<ChatMessage | null>(null);
+  const [menu, setMenu] = useState<{
+    message: ChatMessage;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<ChatMessage | null>(null);
 
   const messageSeq = useRef(0);
   const nearBottom = useRef(true);
@@ -194,7 +207,16 @@ export default function MessagesApp({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (emojiOpen) {
+      if (menu) {
+        setMenu(null);
+      } else if (confirmDelete) {
+        setConfirmDelete(null);
+      } else if (editing) {
+        setEditing(null);
+        setDraft("");
+      } else if (replyTarget) {
+        setReplyTarget(null);
+      } else if (emojiOpen) {
         setEmojiOpen(false);
       } else if (composerOpen) {
         setComposerOpen(false);
@@ -204,7 +226,28 @@ export default function MessagesApp({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [composerOpen, emojiOpen]);
+  }, [composerOpen, emojiOpen, menu, confirmDelete, editing, replyTarget]);
+
+  useEffect(() => {
+    if (!menu && !confirmDelete) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest("[data-message-menu], [data-delete-dialog]")) return;
+      setMenu(null);
+      setConfirmDelete(null);
+    };
+    const close = () => setMenu(null);
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu, confirmDelete]);
 
   useEffect(() => {
     if (!error) return;
@@ -252,6 +295,10 @@ export default function MessagesApp({
     setDraft("");
     setError(null);
     setEmojiOpen(false);
+    setReplyTarget(null);
+    setEditing(null);
+    setMenu(null);
+    setConfirmDelete(null);
     setMobileChatOpen(true);
     setConversations((current) =>
       current.map((conversation) =>
@@ -306,12 +353,197 @@ export default function MessagesApp({
     });
   };
 
+  const senderNameFor = (message: ChatMessage) =>
+    message.senderId === currentUser.id
+      ? currentUser.nickname
+      : selected?.peer.nickname ?? "Unknown";
+
+  const openMessageMenu = (message: ChatMessage, x: number, y: number) => {
+    if (message.id.startsWith("temp-")) return;
+    const mine = message.senderId === currentUser.id;
+    const width = 190;
+    const height = mine ? 172 : 100;
+    setMenu({
+      message,
+      x: Math.max(8, Math.min(x, window.innerWidth - width - 8)),
+      y: Math.max(8, Math.min(y, window.innerHeight - height - 8)),
+    });
+  };
+
+  const startReply = (message: ChatMessage) => {
+    setMenu(null);
+    setEditing(null);
+    setDraft("");
+    setReplyTarget(message);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const startEdit = (message: ChatMessage) => {
+    if (message.senderId !== currentUser.id) return;
+    setMenu(null);
+    setReplyTarget(null);
+    setEditing(message);
+    setDraft(message.body);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      const end = message.body.length;
+      inputRef.current?.setSelectionRange(end, end);
+    });
+  };
+
+  const cancelComposerMode = () => {
+    if (editing) {
+      setEditing(null);
+      setDraft("");
+    }
+    setReplyTarget(null);
+  };
+
+  const copyMessage = async (message: ChatMessage) => {
+    setMenu(null);
+    try {
+      await navigator.clipboard.writeText(message.body);
+    } catch {
+      const area = document.createElement("textarea");
+      area.value = message.body;
+      area.setAttribute("readonly", "");
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+  };
+
+  const deleteMessageAndRefresh = async (message: ChatMessage) => {
+    setConfirmDelete(null);
+    setMenu(null);
+
+    const conversationId = message.conversationId;
+    const previous = messages;
+    const next = previous.filter((item) => item.id !== message.id);
+
+    setMessages(next);
+    messageCache.current.set(conversationId, next);
+    setConversations((current) =>
+      current.map((conversation) =>
+        conversation.id === conversationId
+          ? {
+              ...conversation,
+              lastMessage: next[next.length - 1] ?? null,
+            }
+          : conversation,
+      ),
+    );
+    if (replyTarget?.id === message.id) setReplyTarget(null);
+    if (editing?.id === message.id) {
+      setEditing(null);
+      setDraft("");
+    }
+
+    try {
+      const response = await fetch(
+        `/api/conversations/${conversationId}/messages/${message.id}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(data?.error ?? "Could not delete the message.");
+      }
+      void refreshConversations();
+    } catch (caught) {
+      setMessages(previous);
+      messageCache.current.set(conversationId, previous);
+      setError(
+        caught instanceof Error ? caught.message : "Could not delete the message.",
+      );
+      void refreshConversations();
+    }
+  };
+
   const send = async () => {
     const text = draft.trim();
     if (!text || !selectedId || sending) return;
 
     setEmojiOpen(false);
     const conversationId = selectedId;
+
+    if (editing) {
+      const target = editing;
+      const optimisticAt = new Date().toISOString();
+
+      setError(null);
+      setSending(true);
+      setDraft("");
+      setEditing(null);
+      setMessages((current) => {
+        const next = current.map((message) =>
+          message.id === target.id
+            ? { ...message, body: text, editedAt: optimisticAt }
+            : message,
+        );
+        messageCache.current.set(conversationId, next);
+        return next;
+      });
+
+      try {
+        const response = await fetch(
+          `/api/conversations/${conversationId}/messages/${target.id}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ body: text }),
+          },
+        );
+        const data = (await response.json().catch(() => null)) as
+          | { message?: ChatMessage; error?: string }
+          | null;
+
+        if (!response.ok || !data?.message) {
+          throw new Error(data?.error ?? "Could not edit the message.");
+        }
+
+        const saved = data.message;
+        if (selectedIdRef.current === conversationId) {
+          setMessages((current) => {
+            const next = current.map((message) =>
+              message.id === target.id ? saved : message,
+            );
+            messageCache.current.set(conversationId, next);
+            return next;
+          });
+        }
+        void refreshConversations();
+        requestAnimationFrame(() => inputRef.current?.focus());
+      } catch (caught) {
+        if (selectedIdRef.current === conversationId) {
+          setMessages((current) => {
+            const next = current.map((message) =>
+              message.id === target.id ? target : message,
+            );
+            messageCache.current.set(conversationId, next);
+            return next;
+          });
+          setDraft(text);
+          setEditing(target);
+        }
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Could not edit the message.",
+        );
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
+    const reply = replyTarget;
     const temporaryId = `temp-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 8)}`;
@@ -321,9 +553,19 @@ export default function MessagesApp({
       senderId: currentUser.id,
       body: text,
       createdAt: new Date().toISOString(),
+      replyTo: reply
+        ? {
+            id: reply.id,
+            body: reply.body,
+            senderId: reply.senderId,
+            senderName: senderNameFor(reply),
+          }
+        : null,
+      editedAt: null,
     };
 
     setDraft("");
+    setReplyTarget(null);
     setError(null);
     setSending(true);
     nearBottom.current = true;
@@ -350,7 +592,7 @@ export default function MessagesApp({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body: text }),
+          body: JSON.stringify({ body: text, replyToId: reply?.id ?? null }),
         },
       );
       const data = (await response.json().catch(() => null)) as
@@ -392,10 +634,15 @@ export default function MessagesApp({
       requestAnimationFrame(() => inputRef.current?.focus());
     } catch (caught) {
       if (selectedIdRef.current === conversationId) {
-        setMessages((current) =>
-          current.filter((message) => message.id !== temporaryId),
-        );
+        setMessages((current) => {
+          const next = current.filter(
+            (message) => message.id !== temporaryId,
+          );
+          messageCache.current.set(conversationId, next);
+          return next;
+        });
         setDraft(text);
+        if (reply) setReplyTarget(reply);
       }
       setError(
         caught instanceof Error ? caught.message : "Message failed to send.",
@@ -640,7 +887,7 @@ export default function MessagesApp({
                 onScroll={handleScroll}
                 className="thin-scrollbar flex-1 overflow-y-auto"
               >
-                <div className="mx-auto flex min-h-full w-full max-w-[700px] flex-col justify-end px-4 py-3">
+                <div className="mx-auto flex min-h-full w-full flex-col justify-end px-4 py-3 sm:px-6">
                   {messagesLoading && messages.length === 0 ? (
                     <p className="py-10 text-center text-[12px] text-muted">
                       Loading messages…
@@ -682,6 +929,7 @@ export default function MessagesApp({
                           newGroup={
                             !previous || previous.senderId !== message.senderId
                           }
+                          onOpenMenu={openMessageMenu}
                         />
                         {isLast && mine ? (
                           <p
@@ -702,42 +950,74 @@ export default function MessagesApp({
               </div>
 
               <div className="shrink-0 border-t border-line-soft px-3 py-3 sm:px-4">
-                <div className="relative mx-auto flex max-w-[700px] items-center gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-line px-2.5 py-[5px] transition focus-within:border-strong">
-                    <button
-                      type="button"
-                      onClick={() => setEmojiOpen((current) => !current)}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      aria-label="Insert emoji"
-                      aria-expanded={emojiOpen}
-                      className="grid size-8 shrink-0 place-items-center rounded-full text-ink transition hover:bg-hover"
-                    >
-                      <Smile size={22} strokeWidth={1.6} />
-                    </button>
-                    <input
-                      ref={inputRef}
-                      value={draft}
-                      onChange={(event) => setDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          void send();
-                        }
-                      }}
-                      placeholder="Message..."
-                      aria-label={`Message ${selected.peer.nickname}`}
-                      className="h-6 min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-muted"
-                    />
-                  </div>
-                  {draft.trim() ? (
-                    <button
-                      onClick={() => void send()}
-                      disabled={sending}
-                      className="shrink-0 text-[14px] font-semibold text-accent transition hover:text-accent-hover disabled:opacity-60"
-                    >
-                      Send
-                    </button>
+                <div className="relative mx-auto w-full">
+                  {editing || replyTarget ? (
+                    <div className="mb-2 flex items-center gap-2 rounded-xl border border-line bg-subtle px-3 py-2">
+                      <span className="h-8 w-1 shrink-0 rounded-full bg-accent" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[11px] font-semibold text-accent">
+                          {editing
+                            ? "Editing message"
+                            : replyTarget
+                              ? `Replying to ${senderNameFor(replyTarget)}`
+                              : ""}
+                        </p>
+                        <p className="truncate text-[12px] leading-4 text-muted">
+                          {editing ? editing.body : replyTarget?.body}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={cancelComposerMode}
+                        aria-label="Cancel reply or edit"
+                        className="grid size-7 shrink-0 place-items-center rounded-full text-muted transition hover:bg-hover hover:text-ink"
+                      >
+                        <X size={15} strokeWidth={2.2} />
+                      </button>
+                    </div>
                   ) : null}
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-line px-2.5 py-[5px] transition focus-within:border-strong">
+                      <button
+                        type="button"
+                        onClick={() => setEmojiOpen((current) => !current)}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        aria-label="Insert emoji"
+                        aria-expanded={emojiOpen}
+                        className="grid size-8 shrink-0 place-items-center rounded-full text-ink transition hover:bg-hover"
+                      >
+                        <Smile size={22} strokeWidth={1.6} />
+                      </button>
+                      <input
+                        ref={inputRef}
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void send();
+                          }
+                        }}
+                        placeholder={editing ? "Edit message..." : "Message..."}
+                        aria-label={
+                          editing
+                            ? "Edit message"
+                            : `Message ${selected.peer.nickname}`
+                        }
+                        className="h-6 min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none placeholder:text-muted"
+                      />
+                    </div>
+                    {draft.trim() ? (
+                      <button
+                        onClick={() => void send()}
+                        disabled={sending}
+                        className="shrink-0 text-[14px] font-semibold text-accent transition hover:text-accent-hover disabled:opacity-60"
+                      >
+                        {editing ? "Save" : "Send"}
+                      </button>
+                    ) : null}
+                  </div>
 
                   {emojiOpen ? (
                     <EmojiPicker
@@ -777,6 +1057,85 @@ export default function MessagesApp({
         />
       ) : null}
 
+      {menu ? (
+        <div
+          data-message-menu
+          role="menu"
+          aria-label="Message actions"
+          style={{ left: menu.x, top: menu.y }}
+          className="fixed z-50 w-[190px] overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-2xl"
+        >
+          <MenuItem
+            icon={<Reply size={15} strokeWidth={2} />}
+            label="Reply"
+            onClick={() => startReply(menu.message)}
+          />
+          <MenuItem
+            icon={<Copy size={15} strokeWidth={2} />}
+            label="Copy"
+            onClick={() => void copyMessage(menu.message)}
+          />
+          {menu.message.senderId === currentUser.id ? (
+            <>
+              <div className="my-1 h-px bg-line-soft" />
+              <MenuItem
+                icon={<Pencil size={15} strokeWidth={2} />}
+                label="Edit"
+                onClick={() => startEdit(menu.message)}
+              />
+              <MenuItem
+                icon={<Trash2 size={15} strokeWidth={2} />}
+                label="Delete"
+                danger
+                onClick={() => {
+                  setMenu(null);
+                  setConfirmDelete(menu.message);
+                }}
+              />
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {confirmDelete ? (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/40 px-4"
+          onClick={() => setConfirmDelete(null)}
+        >
+          <div
+            data-delete-dialog
+            role="dialog"
+            aria-modal="true"
+            aria-label="Delete message"
+            className="w-full max-w-[320px] rounded-2xl border border-line bg-surface p-5 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-[15px] font-semibold text-ink">
+              Delete message?
+            </h3>
+            <p className="mt-1 text-[13px] leading-5 text-muted">
+              This removes the message for everyone in this chat.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-hover"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void deleteMessageAndRefresh(confirmDelete)}
+                className="rounded-lg bg-red-500 px-3 py-1.5 text-[13px] font-semibold text-white transition hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {error ? (
         <div
           role="alert"
@@ -804,11 +1163,31 @@ function Bubble({
   message,
   mine,
   newGroup,
+  onOpenMenu,
 }: {
   message: ChatMessage;
   mine: boolean;
   newGroup: boolean;
+  onOpenMenu: (message: ChatMessage, x: number, y: number) => void;
 }) {
+  const timer = useRef<number | null>(null);
+  const origin = useRef<{ x: number; y: number } | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timer.current) window.clearTimeout(timer.current);
+    },
+    [],
+  );
+
+  const cancelLongPress = () => {
+    if (timer.current) {
+      window.clearTimeout(timer.current);
+      timer.current = null;
+    }
+    origin.current = null;
+  };
+
   return (
     <div
       className={`flex ${mine ? "justify-end" : "justify-start"} ${
@@ -816,14 +1195,105 @@ function Bubble({
       }`}
     >
       <div
-        suppressHydrationWarning
-        title={`${dayLabel(message.createdAt)} ${clockTime(message.createdAt)}`}
-        className={`max-w-[75%] whitespace-pre-wrap break-words rounded-[20px] px-3.5 py-2 text-[14px] leading-[1.4] ${
-          mine ? "bg-[#3797f0] text-white" : "bg-bubble text-ink"
-        } ${message.id.startsWith("temp-") ? "opacity-70" : ""}`}
+        className={`flex max-w-[85%] flex-col lg:max-w-[640px] ${
+          mine ? "items-end" : "items-start"
+        }`}
       >
-        {message.body}
+        <div
+          suppressHydrationWarning
+          data-message-id={message.id}
+          data-mine={mine ? "true" : "false"}
+          data-reply-to={message.replyTo?.id}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            onOpenMenu(message, event.clientX, event.clientY);
+          }}
+          onTouchStart={(event) => {
+            if (message.id.startsWith("temp-")) return;
+            const touch = event.touches[0];
+            if (!touch) return;
+            cancelLongPress();
+            origin.current = { x: touch.clientX, y: touch.clientY };
+            timer.current = window.setTimeout(() => {
+              timer.current = null;
+              onOpenMenu(message, touch.clientX, touch.clientY);
+            }, 450);
+          }}
+          onTouchMove={(event) => {
+            const touch = event.touches[0];
+            const start = origin.current;
+            if (!touch || !start) return;
+            if (
+              Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 10
+            ) {
+              cancelLongPress();
+            }
+          }}
+          onTouchEnd={cancelLongPress}
+          onTouchCancel={cancelLongPress}
+          title={`${dayLabel(message.createdAt)} ${clockTime(message.createdAt)}`}
+          className={`max-w-full whitespace-pre-wrap break-words rounded-[20px] px-3.5 py-2 text-[14px] leading-[1.4] ${
+            mine ? "bg-[#3797f0] text-white" : "bg-bubble text-ink"
+          } ${message.id.startsWith("temp-") ? "opacity-70" : ""}`}
+        >
+          {message.replyTo ? (
+            <div
+              className={`mb-1.5 overflow-hidden rounded-lg border-l-[3px] px-2 py-1 ${
+                mine
+                  ? "border-white/70 bg-white/15"
+                  : "border-[#3797f0] bg-black/[0.05] dark:bg-white/[0.07]"
+              }`}
+            >
+              <p
+                className={`truncate text-[11px] font-semibold leading-4 ${
+                  mine ? "text-white" : "text-accent"
+                }`}
+              >
+                {message.replyTo.senderName}
+              </p>
+              <p
+                className={`line-clamp-2 text-[12px] leading-4 ${
+                  mine ? "text-white/80" : "text-muted"
+                }`}
+              >
+                {message.replyTo.body}
+              </p>
+            </div>
+          ) : null}
+          {message.body}
+        </div>
+        {message.editedAt && !message.id.startsWith("temp-") ? (
+          <span className="mt-0.5 px-1 text-[10px] leading-3 text-muted">
+            Edited
+          </span>
+        ) : null}
       </div>
     </div>
+  );
+}
+
+function MenuItem({
+  icon,
+  label,
+  onClick,
+  danger = false,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium transition ${
+        danger ? "text-red-500 hover:bg-red-500/10" : "text-ink hover:bg-hover"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

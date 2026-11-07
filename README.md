@@ -111,6 +111,19 @@ the toggle just explains that notifications aren't configured.
 
 The service worker lives in `public/sw.js` and must stay at the site root.
 
+## Message actions
+
+Right-click a bubble (or long-press it on touch) to get WhatsApp-style actions:
+
+- **Reply** — quotes the message above the composer and inside the new bubble
+- **Copy** — copies the message text
+- **Edit** — only on your own messages; saved edits show an “Edited” label
+- **Delete** — only on your own messages; asks for confirmation first
+
+Replies and edits are stored in Postgres (`messages.reply_to_id` and
+`messages.edited_at`). The web and mobile APIs expose `PATCH`/`DELETE` at
+`/api/conversations/[id]/messages/[messageId]` with sender-ownership checks.
+
 ## Appearance
 
 **Settings → Appearance** offers Light, Light grey, Dark (black), Dark grey, and

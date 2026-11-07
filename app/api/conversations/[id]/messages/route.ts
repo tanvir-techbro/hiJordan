@@ -3,6 +3,7 @@ import { after } from "next/server";
 import {
   getConversationPeer,
   getMessages,
+  messageBelongsToConversation,
   sendMessage,
 } from "@/lib/queries";
 import { sendMessagePush } from "@/lib/push";
@@ -44,9 +45,11 @@ export async function POST(request: Request, { params }: RouteParams) {
   }
 
   const payload = (await request.json().catch(() => null)) as
-    | { body?: unknown }
+    | { body?: unknown; replyToId?: unknown }
     | null;
   const body = typeof payload?.body === "string" ? payload.body.trim() : "";
+  const replyToId =
+    typeof payload?.replyToId === "string" ? payload.replyToId : null;
 
   if (!body) {
     return NextResponse.json({ error: "Message can't be empty." }, { status: 400 });
@@ -59,7 +62,23 @@ export async function POST(request: Request, { params }: RouteParams) {
     );
   }
 
-  const message = await sendMessage(user.id, id, body);
+  if (replyToId) {
+    if (!isUuid(replyToId)) {
+      return NextResponse.json(
+        { error: "Reply target not found." },
+        { status: 400 },
+      );
+    }
+    const target = await messageBelongsToConversation(replyToId, id);
+    if (!target) {
+      return NextResponse.json(
+        { error: "Reply target not found." },
+        { status: 400 },
+      );
+    }
+  }
+
+  const message = await sendMessage(user.id, id, body, replyToId);
   if (!message) {
     return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
   }
